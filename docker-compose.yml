@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # --- Servicio 1: PostgreSQL (Relacional) ---
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: fulbo_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: fulbo_admin
+      POSTGRES_PASSWORD: fulbo_password_secure
+      POSTGRES_DB: fulbo_app
+    ports:
+      - "5433:5432" # Mapea puerto 5432 del contenedor a tu PC
+    volumes:
+      # Esto guarda los datos en una carpeta local 'postgres_data'
+      - ./database/volumes/postgres_data:/var/lib/postgresql/data
+
+  # --- Servicio 2: MongoDB (NoSQL/Chat) ---
+  mongo_db:
+    image: mongo:latest
+    container_name: fulbo_mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: fulbo_admin
+      MONGO_INITDB_ROOT_PASSWORD: fulbo_password_secure
+    ports:
+      - "27017:27017" # Mapea puerto 27017 del contenedor a tu PC
+    volumes:
+      # Esto guarda los datos en una carpeta local 'mongo_data'
+      - ./database/volumes/mongo_data:/data/db
+
+  # (Opcional) Mongo Express - Interfaz web ligera para ver Mongo
+  # Útil si no tienes DataGrip a mano, entra a http://localhost:8081
+  mongo_express:
+    image: mongo-express
+    container_name: fulbo_mongo_express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: fulbo_admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: fulbo_password_secure
+      ME_CONFIG_MONGODB_URL: mongodb://fulbo_admin:fulbo_password_secure@mongo_db:27017/
+    depends_on:
+      - mongo_db
