@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
+model bookings {
+  booking_id  String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  player_id   String         @db.Uuid
+  field_id    String         @db.Uuid
+  start_time  DateTime       @db.Timestamptz(6)
+  end_time    DateTime       @db.Timestamptz(6)
+  total_price Decimal        @db.Decimal(10, 2)
+  status      booking_status @default(pending)
+  created_at  DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?      @default(now()) @db.Timestamptz(6)
+  fields      fields         @relation(fields: [field_id], references: [field_id], onDelete: Cascade, onUpdate: NoAction)
+  users       users          @relation(fields: [player_id], references: [user_id], onDelete: SetNull, onUpdate: NoAction)
+  payments    payments[]
+
+  @@index([field_id], map: "idx_bookings_field_id")
+  @@index([player_id], map: "idx_bookings_player_id")
+}
+
+model field_photos {
+  photo_id   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  field_id   String    @db.Uuid
+  image_url  String    @db.VarChar(1024)
+  is_cover   Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  fields     fields    @relation(fields: [field_id], references: [field_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model fields {
+  field_id            String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  owner_id            String                    @db.Uuid
+  name                String                    @db.VarChar(255)
+  address             String
+  description         String?
+  location            Unsupported("geography")?
+  amenities           Json?                     @default("{}")
+  base_price_per_hour Decimal                   @db.Decimal(10, 2)
+  created_at          DateTime?                 @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?                 @default(now()) @db.Timestamptz(6)
+  bookings            bookings[]
+  field_photos        field_photos[]
+  users               users                     @relation(fields: [owner_id], references: [user_id], onUpdate: NoAction)
+  reviews             reviews[]
+
+  @@index([location], map: "idx_fields_location", type: Gist)
+  @@index([owner_id], map: "idx_fields_owner_id")
+}
+
+model payments {
+  payment_id         String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  booking_id         String         @db.Uuid
+  amount             Decimal        @db.Decimal(10, 2)
+  status             payment_status @default(pending)
+  payment_gateway_id String?        @db.VarChar(255)
+  created_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  bookings           bookings       @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([booking_id], map: "idx_payments_booking_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reviews {
+  review_id  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  field_id   String    @db.Uuid
+  player_id  String?   @db.Uuid
+  rating     Int       @db.SmallInt
+  comment    String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  fields     fields    @relation(fields: [field_id], references: [field_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users?    @relation(fields: [player_id], references: [user_id], onUpdate: NoAction)
+
+  @@unique([field_id, player_id])
+  @@index([field_id], map: "idx_reviews_field_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model users {
+  user_id       String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email         String     @unique @db.VarChar(255)
+  password_hash String     @db.VarChar(255)
+  full_name     String     @db.VarChar(255)
+  phone_number  String?    @db.VarChar(50)
+  role          user_role  @default(player)
+  created_at    DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?  @default(now()) @db.Timestamptz(6)
+  bookings      bookings[]
+  fields        fields[]
+  reviews       reviews[]
+}
+
+enum booking_status {
+  pending
+  confirmed
+  cancelled
+}
+
+enum payment_status {
+  pending
+  succeeded
+  failed
+}
+
+enum user_role {
+  player
+  manager
+}
