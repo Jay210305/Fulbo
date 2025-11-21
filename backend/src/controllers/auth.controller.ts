@@ -3,27 +3,22 @@ import { AuthService } from '../services/auth.service';
 
 export class AuthController {
   
+  // --- MÉTODO DE REGISTRO (Ya lo tenías) ---
   static async register(req: Request, res: Response) {
     try {
-      // 1. DEBUG: Ver qué está llegando realmente (útil si falla)
-      // console.log("Body recibido:", req.body);
-
-      // 2. Extraemos TODOS los datos que vienen del frontend
-      // Nota: Usamos camelCase aquí porque es el estándar en JSON/JS
       const { 
         email, 
         password, 
-        firstName,    // Reemplaza a fullName
-        lastName,     // Nuevo campo
+        firstName, 
+        lastName, 
         phoneNumber,
-        documentType,   // Nuevo
-        documentNumber, // Nuevo
-        city,           // Nuevo
-        district        // Nuevo
+        documentType, 
+        documentNumber,
+        city, 
+        district 
       } = req.body;
 
-      // 3. Validaciones básicas
-      // Aseguramos que vengan los campos OBLIGATORIOS en la DB (NOT NULL)
+      // Validaciones básicas
       if (!email || !password || !firstName || !lastName) {
          res.status(400).json({ 
            error: 'Faltan campos obligatorios. Se requiere: email, password, firstName, lastName' 
@@ -31,16 +26,13 @@ export class AuthController {
          return;
       }
 
-      // 4. Llamamos al servicio
-      // Aquí convertimos de camelCase (variables del front) a la estructura que espera el servicio
+      // Llamamos al servicio
       const user = await AuthService.registerUser({
         email,
-        password,        // Pasamos la contraseña plana, el servicio la hasheará
-        firstName,       // Mapeo: firstName -> first_name
-        lastName,        // Mapeo: lastName -> last_name
+        password,
+        firstName,
+        lastName,
         phoneNumber,
-        
-        // Campos opcionales (pueden ser undefined si el front no los manda aun)
         documentType,
         documentNumber,
         city,
@@ -53,11 +45,41 @@ export class AuthController {
       });
 
     } catch (error: any) {
-      console.error("Error en registro:", error); // Logueamos el error en el servidor para debug
-      
-      // Manejo de errores simple
+      console.error("Error en registro:", error);
       const status = error.message === 'El email ya está registrado' ? 409 : 500;
       res.status(status).json({ error: error.message });
+    }
+  }
+
+  // --- NUEVO MÉTODO: LOGIN (FUSIONADO) ---
+  static async login(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+
+      // 1. Validaciones básicas de entrada
+      if (!email || !password) {
+        res.status(400).json({ message: 'Email y contraseña son obligatorios' });
+        return;
+      }
+
+      // 2. Llamada a la Capa de Servicio (Usando el método estático)
+      const data = await AuthService.loginUser(email, password);
+
+      // 3. Respuesta estandarizada
+      res.status(200).json({
+        status: 'success',
+        message: 'Login exitoso',
+        token: data.token,
+        user: data.user,
+      });
+
+    } catch (error: any) {
+      // Manejo de errores (Credenciales inválidas, usuario no existe, etc.)
+      // Usamos 401 Unauthorized para fallos de login
+      res.status(401).json({ 
+        status: 'error', 
+        message: error.message 
+      });
     }
   }
 }
