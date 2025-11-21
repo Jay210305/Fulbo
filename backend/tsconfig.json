@@ -1,23 +1,22 @@
 {
   "compilerOptions": {
-    "target": "es2018",
-    "module": "commonjs",
-    "lib": ["es2018"],
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    /* --- Configuración Básica --- */
+    "target": "es2020",               // Versión moderna de JS compatible con Node 14+
+    "module": "commonjs",             // Estándar para Node.js
+    "moduleResolution": "node",       // Algoritmo de resolución de módulos clásico
+    "rootDir": "./src",               // Dónde está tu código fuente
+    "outDir": "./dist",               // Dónde se guardará el código compilado
+    
+    /* --- Interoperabilidad --- */
+    "esModuleInterop": true,          // Permite importar módulos CommonJS (como express) con 'import' normal
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "../generated/prisma": ["./generated/prisma/index"]
-    },
-    "typeRoots": ["./node_modules/@types", "./node_modules/.prisma/client"]
+    "resolveJsonModule": true,        // Permite importar archivos .json
+
+    /* --- Estrictez (Mejores Prácticas) --- */
+    "strict": true,                   // Activa todas las verificaciones estrictas de tipos
+    "noImplicitAny": true,            // No permite variables sin tipo definido
+    "skipLibCheck": true              // Salta chequeo de tipos en librerías externas (ahorra tiempo)
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],            // Incluir todo lo que esté en src
+  "exclude": ["node_modules", "dist"] // Ignorar dependencias y builds
 }

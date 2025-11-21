@@ -1,10 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -94,17 +94,24 @@ model spatial_ref_sys {
 }
 
 model users {
-  user_id       String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  email         String     @unique @db.VarChar(255)
-  password_hash String     @db.VarChar(255)
-  full_name     String     @db.VarChar(255)
-  phone_number  String?    @db.VarChar(50)
-  role          user_role  @default(player)
-  created_at    DateTime?  @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime?  @default(now()) @db.Timestamptz(6)
-  bookings      bookings[]
-  fields        fields[]
-  reviews       reviews[]
+  user_id          String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email            String             @unique @db.VarChar(255)
+  password_hash    String?            @db.VarChar(255)
+  phone_number     String?            @db.VarChar(50)
+  role             user_role          @default(player)
+  created_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamptz(6)
+  auth_provider    auth_provider_type @default(email)
+  auth_provider_id String?            @db.VarChar(255)
+  city             String?            @db.VarChar(100)
+  district         String?            @db.VarChar(100)
+  document_number  String?            @db.VarChar(20)
+  document_type    String?            @db.VarChar(20)
+  first_name       String             @db.VarChar(100)
+  last_name        String             @db.VarChar(100)
+  bookings         bookings[]
+  fields           fields[]
+  reviews          reviews[]
 }
 
 enum booking_status {
@@ -122,4 +129,11 @@ enum payment_status {
 enum user_role {
   player
   manager
+}
+
+enum auth_provider_type {
+  email
+  google
+  facebook
+  apple
 }
