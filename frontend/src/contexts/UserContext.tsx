@@ -21,13 +21,16 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserData>({
-    name: 'Carlos Mendoza',
-    email: 'carlos@example.com',
-    phone: '', // Inicialmente vacío
-    phoneVerified: false,
-    position: 'Delantero',
-    bio: 'Apasionado por el fútbol, siempre buscando nuevos desafíos.'
+  const [user, setUser] = useState<UserData>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : {
+      name: '',
+      email: '',
+      phone: '',
+      phoneVerified: false,
+      position: '',
+      bio: ''
+    };
   });
 
   const updateUser = (data: Partial<UserData>) => {
