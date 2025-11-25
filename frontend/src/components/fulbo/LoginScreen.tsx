@@ -15,11 +15,29 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleEmailLogin = () => {
-    if (email && password) {
-      onLogin();
+  const handleEmailLogin = async () => {
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al iniciar sesión');
     }
-  };
+
+    // ÉXITO
+    localStorage.setItem('token', data.token); // Guardar token
+    localStorage.setItem('user', JSON.stringify(data.user)); // Guardar datos básicos
+    
+    onLogin(); // Cambiar estado en App.tsx
+  } catch (err: any) {
+    alert(err.message); // O usa un estado para mostrar error en UI
+  }
+};
 
   if (!showEmailForm) {
     return (
@@ -150,4 +168,5 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
       </div>
     </div>
   );
+  
 }
