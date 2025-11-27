@@ -118,6 +118,26 @@ When your feature is complete:
     ```
 2.  **Create a Pull Request (PR)** on GitHub/GitLab from `feat/my-feature` to `develop`.
 
+### 5. Cleanup (After Merge)
+
+Once your Pull Request has been approved and merged into `develop`:
+
+1.  **Switch back to develop and update:**
+    ```bash
+    git checkout develop
+    git pull origin develop
+    ```
+    *(This ensures you have the merged code on your local machine)*
+
+2.  **Delete your local feature branch:**
+    Do not keep old branches. It causes confusion.
+    ```bash
+    git branch -d feat/my-feature
+    ```
+    *(Note: If Git complains that it hasn't been merged—but you know it has—use `-D` to force delete).*
+
+3.  **Remote Cleanup:** Ensure the branch is deleted on GitHub/GitLab (check "Delete branch after merge" in the PR options).
+
 ### ⚠ Conflict Resolution
 
 If `git pull origin develop` results in a **MERGE CONFLICT**:
