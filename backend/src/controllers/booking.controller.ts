@@ -6,18 +6,20 @@ export class BookingController {
   static async createBooking(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.id; // Viene del JWT
-      const { fieldId, startTime, endTime, totalPrice } = req.body;
+      const { fieldId, startTime, endTime, totalPrice, paymentMethod } = req.body;
 
       if (!fieldId || !startTime || !endTime || !totalPrice) {
          res.status(400).json({ message: 'Faltan datos de la reserva' });
          return;
       }
 
-      const booking = await BookingService.create(userId, {
+      const booking = await BookingService.createBooking({
+        userId,
         fieldId,
         startTime,
         endTime,
-        totalPrice
+        totalPrice,
+        paymentMethod
       });
 
       res.status(201).json(booking);

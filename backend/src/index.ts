@@ -11,6 +11,7 @@ import { Server as SocketServer } from 'socket.io';
 import { connectMongoDB } from './config/mongo';
 import { chatSocketHandler } from './sockets/chat.socket';
 import fieldRoutes from './routes/field.routes';
+import bookingRoutes from './routes/booking.routes';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fields', fieldRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({

@@ -5,6 +5,7 @@ import {
   Smartphone,
   Building2,
   Wallet,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
@@ -106,6 +107,7 @@ export function PaymentMethodsScreen({
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
           totalPrice: grandTotal,
+          paymentMethod: selectedMethod,
         }),
       });
 
@@ -139,7 +141,7 @@ export function PaymentMethodsScreen({
         id: newMatch.chatId,
         matchId: newMatch.id,
         matchName: matchName,
-        lastMessage: "¡Reserva confirmada por el sistema!",
+        lastMessage: "¡Reserva confirmada! Invita a tus amigos.",
         lastMessageTime: "Ahora",
         unreadCount: 0,
         isPermanent: true,
@@ -241,11 +243,16 @@ export function PaymentMethodsScreen({
           disabled={!selectedMethod || loading}
           className="w-full h-12 bg-[#047857] hover:bg-[#047857]/90 disabled:opacity-50"
         >
-          {loading
-            ? "Procesando..."
-            : selectedMethod
-            ? `Pagar S/ ${grandTotal.toFixed(2)}`
-            : "Selecciona un método de pago"}
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Procesando...
+            </>
+          ) : selectedMethod ? (
+            `Pagar S/ ${grandTotal.toFixed(2)}`
+          ) : (
+            "Selecciona un método de pago"
+          )}
         </Button>
       </div>
     </div>
