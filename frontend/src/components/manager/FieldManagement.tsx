@@ -469,7 +469,7 @@ export function FieldManagement() {
 
                   <div>
                     <Label htmlFor="fieldType">Tipo de Cancha *</Label>
-                    <Select value={newField.type} onValueChange={(value) => setNewField({ ...newField, type: value })}>
+                    <Select value={newField.type} onValueChange={(value: string) => setNewField({ ...newField, type: value })}>
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
@@ -483,7 +483,7 @@ export function FieldManagement() {
 
                   <div>
                     <Label htmlFor="surface">Tipo de Superficie *</Label>
-                    <Select value={newField.surface} onValueChange={(value) => setNewField({ ...newField, surface: value })}>
+                    <Select value={newField.surface} onValueChange={(value: string) => setNewField({ ...newField, surface: value })}>
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Seleccionar superficie" />
                       </SelectTrigger>
@@ -720,7 +720,7 @@ export function FieldManagement() {
                       <Checkbox
                         id={`bulk-${field.id}`}
                         checked={selectedFieldsForBulk.includes(field.id)}
-                        onCheckedChange={(checked) => {
+                        onCheckedChange={(checked: boolean) => {
                           setSelectedFieldsForBulk(prev =>
                             checked
                               ? [...prev, field.id]
