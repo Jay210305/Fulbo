@@ -7,5 +7,6 @@ const router = Router();
 // Todas las rutas aquí requieren estar logueado
 router.get('/profile', protect, UserController.getProfile);
 router.put('/profile', protect, UserController.updateProfile);
+router.post('/verify-phone', protect, UserController.verifyPhone);
 
 export default router;

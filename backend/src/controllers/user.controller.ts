@@ -61,4 +61,33 @@ export class UserController {
       res.status(500).json({ message: 'Error al actualizar perfil' });
     }
   }
+
+  // POST /api/users/verify-phone
+  static async verifyPhone(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.id;
+      const { phone, code } = req.body;
+
+      // TODO: Integrar con Twilio/AWS SNS en producción
+      // Por ahora, aceptamos el código "123456" para pruebas
+      if (code !== '123456') { 
+         res.status(400).json({ message: 'Código de verificación incorrecto' });
+         return;
+      }
+
+      // Actualizamos el teléfono del usuario
+      await prisma.users.update({
+        where: { user_id: userId },
+        data: { 
+          phone_number: phone
+          // Si tuvieras una columna 'phone_verified' en la BD, la pondrías en true aquí
+        }
+      });
+
+      res.json({ message: 'Teléfono verificado exitosamente' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error al verificar teléfono' });
+    }
+  }
 }

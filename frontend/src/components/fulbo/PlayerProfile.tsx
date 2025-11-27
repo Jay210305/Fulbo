@@ -6,6 +6,7 @@ import { Settings, Trophy, Calendar, MapPin, LogOut, Building2, ArrowLeftRight, 
 import { ProfileSettingsScreen } from "./ProfileSettingsScreen";
 import { MyMatchesScreen } from "./MyMatchesScreen";
 import { TeamsManagementScreen } from "./TeamsManagementScreen";
+import { useUser } from "../../contexts/UserContext";
 
 interface PlayerProfileProps {
   isOwner: boolean;
@@ -16,6 +17,7 @@ interface PlayerProfileProps {
 }
 
 export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitchMode, onOpenChat }: PlayerProfileProps) {
+  const {user} = useUser();
   const [showSettings, setShowSettings] = useState(false);
   const [showMyMatches, setShowMyMatches] = useState(false);
   const [showTeams, setShowTeams] = useState(false);
@@ -85,16 +87,17 @@ export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitc
           <Avatar className="w-24 h-24">
             <AvatarFallback className="bg-[#047857] text-white text-2xl">
               JD
+              {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </AvatarFallback>
           </Avatar>
           
           <div>
-            <h2 className="text-xl mb-1">Juan Pérez Díaz</h2>
-            <p className="text-muted-foreground">@juanperez</p>
+            <h2 className="text-xl mb-1">{user.name || 'Usuario'}</h2>
+            <p className="text-muted-foreground">{user.email || 'Sin email'}</p>
           </div>
 
           <div className="flex gap-2">
-            <Badge variant="secondary" className="px-3 py-1">Delantero</Badge>
+            <Badge variant="secondary" className="px-3 py-1">{user.position || 'Jugador'}</Badge>
             <Badge className="bg-[#34d399] hover:bg-[#34d399]/90 text-white border-none px-3 py-1">
               Activo
             </Badge>

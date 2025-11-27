@@ -30,3 +30,14 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
     res.status(401).json({ message: 'No autorizado, no hay token' });
   }
 };
+
+// ... (imports y función protect existentes)
+
+export const isManager = (req: AuthRequest, res: Response, next: NextFunction) => {
+  // Verificamos si el usuario existe y si su rol es 'manager'
+  if (req.user && req.user.role === 'manager') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Acceso denegado: Se requiere rol de Manager' });
+  }
+};
