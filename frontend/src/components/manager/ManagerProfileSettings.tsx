@@ -202,7 +202,7 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
             </div>
             <Switch
               checked={notifications.newReservations}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, newReservations: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, newReservations: checked })}
             />
           </div>
 
@@ -216,7 +216,7 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
             </div>
             <Switch
               checked={notifications.cancelations}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, cancelations: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, cancelations: checked })}
             />
           </div>
 
@@ -230,7 +230,7 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
             </div>
             <Switch
               checked={notifications.systemUpdates}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, systemUpdates: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, systemUpdates: checked })}
             />
           </div>
 
@@ -244,7 +244,7 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
             </div>
             <Switch
               checked={notifications.promotions}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, promotions: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, promotions: checked })}
             />
           </div>
         </div>

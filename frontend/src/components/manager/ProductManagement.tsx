@@ -155,7 +155,7 @@ export function ProductManagement({ fieldName, onBack }: ProductManagementProps)
 
               <div>
                 <Label htmlFor="category">Categoría</Label>
-                <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
+                <Select value={newProduct.category} onValueChange={(value: string) => setNewProduct({ ...newProduct, category: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

@@ -348,7 +348,7 @@ export function StaffManagementScreen({ onBack }: StaffManagementScreenProps) {
                   <Checkbox
                     id={`new-${key}`}
                     checked={newStaff.permissions[key as keyof typeof newStaff.permissions]}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked: boolean) => 
                       setNewStaff({
                         ...newStaff,
                         permissions: {
@@ -399,7 +399,7 @@ export function StaffManagementScreen({ onBack }: StaffManagementScreenProps) {
                   <Checkbox
                     id={`edit-${key}`}
                     checked={selectedStaff.permissions[key as keyof typeof selectedStaff.permissions]}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked: boolean) => 
                       setSelectedStaff({
                         ...selectedStaff,
                         permissions: {
