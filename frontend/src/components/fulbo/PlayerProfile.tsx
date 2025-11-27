@@ -17,7 +17,7 @@ interface PlayerProfileProps {
 }
 
 export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitchMode, onOpenChat }: PlayerProfileProps) {
-  const {user} = useUser();
+  const {user, logout} = useUser();
   const [showSettings, setShowSettings] = useState(false);
   const [showMyMatches, setShowMyMatches] = useState(false);
   const [showTeams, setShowTeams] = useState(false);
@@ -223,7 +223,7 @@ export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitc
             Mis Equipos Formales
           </Button>
           
-          <Button variant="outline" className="w-full h-12 text-destructive border-destructive hover:bg-destructive hover:text-white">
+          <Button onClick={logout} variant="outline" className="w-full h-12 text-destructive border-destructive hover:bg-destructive hover:text-white">
             <LogOut size={20} className="mr-2" />
             Cerrar Sesión
           </Button>

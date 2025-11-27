@@ -13,20 +13,21 @@ async function main() {
         first_name: 'Geo',
         last_name: 'Admin',
         role: 'manager',
-        password_hash: 'hash',
+        password_hash: 'hash', // En un caso real usa bcrypt
       }
     });
+    console.log('👤 Usuario Manager creado para la prueba.');
   }
 
-  // 2. Insertar Cancha usando SQL RAW para la función ST_MakePoint
-  // Coordenadas ejemplo: Plaza de Armas de Arequipa (-16.3988, -71.5369)
+  // 2. Insertar Cancha usando SQL RAW
+  // CORRECCIÓN: Agregamos 'field_id' y usamos 'gen_random_uuid()' para generar el ID en la BD.
   const lat = -16.3988;
   const lng = -71.5369;
 
-  // Usamos executeRaw para INSERT
   await prisma.$executeRaw`
-    INSERT INTO fields (name, owner_id, address, base_price_per_hour, location, description)
+    INSERT INTO fields (field_id, name, owner_id, address, base_price_per_hour, location, description)
     VALUES (
+      gen_random_uuid(), 
       'Cancha La Monumental Arequipa',
       ${owner.user_id}::uuid,
       'Centro Histórico',
@@ -36,9 +37,12 @@ async function main() {
     );
   `;
 
-  console.log('✅ Cancha con geolocalización insertada.');
+  console.log('✅ Cancha con geolocalización insertada exitosamente.');
 }
 
 main()
-  .catch(e => console.error(e))
+  .catch(e => {
+    console.error('❌ Error al sembrar datos:', e);
+    process.exit(1);
+  })
   .finally(async () => await prisma.$disconnect());
