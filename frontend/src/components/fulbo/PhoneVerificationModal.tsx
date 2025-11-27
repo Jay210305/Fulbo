@@ -65,7 +65,7 @@ export function PhoneVerificationModal({ open, onClose, onVerified, isEditing = 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen: boolean) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         {step === 'phone' ? (
           <>
@@ -153,7 +153,7 @@ export function PhoneVerificationModal({ open, onClose, onVerified, isEditing = 
                 <InputOTP
                   maxLength={6}
                   value={otpCode}
-                  onChange={(value) => setOtpCode(value)}
+                  onChange={(value: string) => setOtpCode(value)}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />

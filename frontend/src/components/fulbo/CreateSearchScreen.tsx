@@ -137,7 +137,7 @@ export function CreateSearchScreen({ matchName, fieldName, date, time, preSelect
               <div className="space-y-4">
                 <div>
                   <Label>Nivel de tu Equipo *</Label>
-                  <RadioGroup value={teamLevel} onValueChange={(value) => setTeamLevel(value as TeamLevel)} className="mt-3 space-y-3">
+                  <RadioGroup value={teamLevel} onValueChange={(value: string) => setTeamLevel(value as TeamLevel)} className="mt-3 space-y-3">
                     <div className="flex items-start space-x-3 p-3 border-2 rounded-lg border-border hover:border-[#047857] transition-colors">
                       <RadioGroupItem value="principiante" id="level-beginner" className="mt-0.5" />
                       <div className="flex-1">
@@ -235,7 +235,7 @@ export function CreateSearchScreen({ matchName, fieldName, date, time, preSelect
               <div className="space-y-4">
                 <div>
                   <Label>Nivel de tu Equipo *</Label>
-                  <RadioGroup value={teamLevel} onValueChange={(value) => setTeamLevel(value as TeamLevel)} className="mt-3 space-y-3">
+                  <RadioGroup value={teamLevel} onValueChange={(value: string) => setTeamLevel(value as TeamLevel)} className="mt-3 space-y-3">
                     <div className="flex items-start space-x-3 p-3 border-2 rounded-lg border-border hover:border-[#047857] transition-colors">
                       <RadioGroupItem value="principiante" id="level-beginner-p" className="mt-0.5" />
                       <div className="flex-1">

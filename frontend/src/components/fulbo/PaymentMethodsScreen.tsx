@@ -66,7 +66,7 @@ export function PaymentMethodsScreen({ matchName, onBack, onPaymentComplete }: P
         name: matchName,
         fieldName: cart.field?.name || 'Cancha',
         location: cart.field?.location || 'Ubicación',
-        date: cart.date || 'Hoy',
+        date: cart.selectedDate || 'Hoy',
         time: cart.selectedTime || '18:00',
         duration: cart.duration || 1,
         type: cart.field?.type || 'Fútbol 7v7',
