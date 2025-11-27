@@ -16,6 +16,7 @@ interface UserContextType {
   hasPhone: () => boolean;
   isPhoneVerified: () => boolean;
   requiresPhoneVerification: () => boolean;
+  logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -29,12 +30,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
-      console.log("🔍 Token encontrado:", token ? "SÍ" : "NO"); // DEBUG
-
+      
+      // Si no hay token, no hacemos nada (la App ya debería haber redirigido al login)
       if (!token) return;
 
       try {
-        console.log("📡 Solicitando perfil al backend..."); // DEBUG
+        console.log("📡 Solicitando perfil al backend...");
         const response = await fetch('http://localhost:4000/api/users/profile', {
           headers: { 
             'Authorization': `Bearer ${token}`,
@@ -44,22 +45,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           const data = await response.json();
-          console.log("✅ Datos recibidos:", data); // DEBUG: Aquí verás si llega first_name
+          console.log("✅ Datos recibidos:", data);
 
-          // Mapeo de Snake_Case (BD) a CamelCase (Frontend)
           const userData: UserData = {
             name: `${data.first_name} ${data.last_name}`,
             email: data.email,
             phone: data.phone_number || '',
             phoneVerified: !!data.phone_number,
-            position: 'Jugador', // Valor por defecto o de BD si lo agregas
+            position: 'Jugador',
             bio: ''
           };
           
           setUser(userData);
         } else {
           console.error("❌ Error API:", response.status, response.statusText);
-          if (response.status === 401) localStorage.removeItem('token'); // Token inválido
+          
+          // CORRECCIÓN IMPORTANTE:
+          // 401 = Token inválido o expirado
+          // 404 = Token válido, pero el usuario ya no existe en la BD (tu caso actual)
+          if (response.status === 401 || response.status === 404) {
+            console.log("⚠️ Sesión inválida, cerrando sesión...");
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Forzamos la recarga para que App.tsx detecte que no hay token y muestre Login
+            window.location.reload();
+          }
         }
       } catch (error) {
         console.error("🔥 Error de conexión:", error);
@@ -71,7 +81,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const updateUser = (data: Partial<UserData>) => {
     setUser(prev => ({ ...prev, ...data }));
-    // Aquí podrías agregar un fetch PUT para guardar cambios en el backend también
+  };
+
+  // 2. Implementación de la función Logout
+  const logout = () => {
+    // Limpiar datos de sesión
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Opcional: Limpiar otros datos cacheados si tuvieras (ej. carrito)
+    // localStorage.removeItem('cart');
+
+    // Recargar la página para reiniciar el estado de la App y volver al Login
+    window.location.reload();
   };
 
   const hasPhone = () => !!user.phone && user.phone.length >= 9;
@@ -79,7 +101,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const requiresPhoneVerification = () => !hasPhone() || !isPhoneVerified();
 
   return (
-    <UserContext.Provider value={{ user, updateUser, hasPhone, isPhoneVerified, requiresPhoneVerification }}>
+    <UserContext.Provider value={{ 
+      user, 
+      updateUser, 
+      hasPhone, 
+      isPhoneVerified, 
+      requiresPhoneVerification,
+      logout // <--- 3. Exportar la función
+    }}>
       {children}
     </UserContext.Provider>
   );

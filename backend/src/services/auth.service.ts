@@ -49,9 +49,16 @@ export class AuthService {
       },
     });
 
-    // 4. Retornar sin password
+    // 4. Generar el Token inmediatamente (AUTO-LOGIN)
+    const token = generateToken(newUser.user_id);
+
+    // 5. Retornar usuario y token
     const { password_hash, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
+    
+    return { 
+      user: userWithoutPassword, 
+      token // <--- Ahora devolvemos el token también aquí
+    };
   }
 
   // --- NUEVO MÉTODO: LOGIN (AGREGAR ESTO) ---
