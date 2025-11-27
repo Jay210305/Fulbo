@@ -687,7 +687,7 @@ export function AdvertisingScreen() {
                     <CalendarComponent
                       mode="single"
                       selected={newPromotion.startDate}
-                      onSelect={(date: Date) => setNewPromotion({ ...newPromotion, startDate: date })}
+                      onSelect={(date: Date | undefined) => setNewPromotion({ ...newPromotion, startDate: date })}
                       locale={es}
                     />
                   </PopoverContent>
@@ -707,7 +707,7 @@ export function AdvertisingScreen() {
                     <CalendarComponent
                       mode="single"
                       selected={newPromotion.endDate}
-                      onSelect={(date: Date) => setNewPromotion({ ...newPromotion, endDate: date })}
+                      onSelect={(date: Date | undefined) => setNewPromotion({ ...newPromotion, endDate: date })}
                       locale={es}
                     />
                   </PopoverContent>
