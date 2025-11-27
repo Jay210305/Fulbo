@@ -470,7 +470,7 @@ export function ScheduleManagement() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Cancha *</Label>
-              <Select value={newReservation.field} onValueChange={(value) => setNewReservation({ ...newReservation, field: value })}>
+              <Select value={newReservation.field} onValueChange={(value: string) => setNewReservation({ ...newReservation, field: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar cancha..." />
                 </SelectTrigger>
@@ -495,7 +495,7 @@ export function ScheduleManagement() {
               </div>
               <div className="space-y-2">
                 <Label>Duración *</Label>
-                <Select value={newReservation.duration} onValueChange={(value) => setNewReservation({ ...newReservation, duration: value })}>
+                <Select value={newReservation.duration} onValueChange={(value: string) => setNewReservation({ ...newReservation, duration: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Duración" />
                   </SelectTrigger>
@@ -539,7 +539,7 @@ export function ScheduleManagement() {
 
             <div className="space-y-2">
               <Label>Estado de Pago *</Label>
-              <Select value={newReservation.paymentStatus} onValueChange={(value) => setNewReservation({ ...newReservation, paymentStatus: value as 'paid' | 'pending' })}>
+              <Select value={newReservation.paymentStatus} onValueChange={(value: string) => setNewReservation({ ...newReservation, paymentStatus: value as 'paid' | 'pending' })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

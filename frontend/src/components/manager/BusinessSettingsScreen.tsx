@@ -172,7 +172,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
               </div>
               <Switch
                 checked={integrations.pos}
-                onCheckedChange={(checked) => setIntegrations({ ...integrations, pos: checked })}
+                onCheckedChange={(checked: boolean) => setIntegrations({ ...integrations, pos: checked })}
               />
             </div>
 
@@ -188,7 +188,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
               </div>
               <Switch
                 checked={integrations.accounting}
-                onCheckedChange={(checked) => setIntegrations({ ...integrations, accounting: checked })}
+                onCheckedChange={(checked: boolean) => setIntegrations({ ...integrations, accounting: checked })}
               />
             </div>
 
@@ -204,7 +204,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
               </div>
               <Switch
                 checked={integrations.analytics}
-                onCheckedChange={(checked) => setIntegrations({ ...integrations, analytics: checked })}
+                onCheckedChange={(checked: boolean) => setIntegrations({ ...integrations, analytics: checked })}
               />
             </div>
           </div>
@@ -240,7 +240,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.newReservations}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, newReservations: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, newReservations: checked })}
                   />
                 </div>
 
@@ -251,7 +251,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.cancellations}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, cancellations: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, cancellations: checked })}
                   />
                 </div>
 
@@ -262,7 +262,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.paymentReceived}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, paymentReceived: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, paymentReceived: checked })}
                   />
                 </div>
               </div>
@@ -281,7 +281,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.lowInventory}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, lowInventory: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, lowInventory: checked })}
                   />
                 </div>
 
@@ -292,7 +292,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.customerReviews}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, customerReviews: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, customerReviews: checked })}
                   />
                 </div>
               </div>
@@ -311,7 +311,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.weeklyReport}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, weeklyReport: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, weeklyReport: checked })}
                   />
                 </div>
 
@@ -322,7 +322,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.monthlyReport}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, monthlyReport: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, monthlyReport: checked })}
                   />
                 </div>
 
@@ -333,7 +333,7 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
                   </div>
                   <Switch
                     checked={notifications.marketingUpdates}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, marketingUpdates: checked })}
+                    onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, marketingUpdates: checked })}
                   />
                 </div>
               </div>

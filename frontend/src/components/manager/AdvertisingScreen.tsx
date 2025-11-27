@@ -576,7 +576,7 @@ export function AdvertisingScreen() {
       </Dialog>
 
       {/* Create/Edit Promotion Dialog */}
-      <Dialog open={showCreatePromotion || showEditPromotion} onOpenChange={(open) => {
+      <Dialog open={showCreatePromotion || showEditPromotion} onOpenChange={(open: boolean) => {
         if (!open) {
           setShowCreatePromotion(false);
           setShowEditPromotion(false);
@@ -594,7 +594,7 @@ export function AdvertisingScreen() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Tipo de Promoción *</Label>
-              <Select value={newPromotion.type} onValueChange={(value) => setNewPromotion({ ...newPromotion, type: value as any })}>
+              <Select value={newPromotion.type} onValueChange={(value: string) => setNewPromotion({ ...newPromotion, type: value as any })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -658,7 +658,7 @@ export function AdvertisingScreen() {
 
             <div className="space-y-2">
               <Label>Cancha Aplicable *</Label>
-              <Select value={newPromotion.field} onValueChange={(value) => setNewPromotion({ ...newPromotion, field: value })}>
+              <Select value={newPromotion.field} onValueChange={(value: string) => setNewPromotion({ ...newPromotion, field: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar cancha..." />
                 </SelectTrigger>
@@ -687,7 +687,7 @@ export function AdvertisingScreen() {
                     <CalendarComponent
                       mode="single"
                       selected={newPromotion.startDate}
-                      onSelect={(date) => setNewPromotion({ ...newPromotion, startDate: date })}
+                      onSelect={(date: Date | undefined) => setNewPromotion({ ...newPromotion, startDate: date })}
                       locale={es}
                     />
                   </PopoverContent>
@@ -707,7 +707,7 @@ export function AdvertisingScreen() {
                     <CalendarComponent
                       mode="single"
                       selected={newPromotion.endDate}
-                      onSelect={(date) => setNewPromotion({ ...newPromotion, endDate: date })}
+                      onSelect={(date: Date | undefined) => setNewPromotion({ ...newPromotion, endDate: date })}
                       locale={es}
                     />
                   </PopoverContent>

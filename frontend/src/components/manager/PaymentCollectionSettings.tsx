@@ -74,7 +74,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
             </div>
             <Switch
               checked={paymentMethods.creditCard.enabled}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked: boolean) => 
                 setPaymentMethods({
                   ...paymentMethods,
                   creditCard: { ...paymentMethods.creditCard, enabled: checked }
@@ -89,7 +89,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
                 <Label>Pasarela de Pago</Label>
                 <Select 
                   value={paymentMethods.creditCard.gateway}
-                  onValueChange={(value) => 
+                  onValueChange={(value: string) => 
                     setPaymentMethods({
                       ...paymentMethods,
                       creditCard: { ...paymentMethods.creditCard, gateway: value }
@@ -162,7 +162,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
             </div>
             <Switch
               checked={paymentMethods.bankTransfer.enabled}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked: boolean) => 
                 setPaymentMethods({
                   ...paymentMethods,
                   bankTransfer: { ...paymentMethods.bankTransfer, enabled: checked }
@@ -177,7 +177,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
                 <Label>Banco</Label>
                 <Select 
                   value={paymentMethods.bankTransfer.bankName}
-                  onValueChange={(value) => 
+                  onValueChange={(value: string) => 
                     setPaymentMethods({
                       ...paymentMethods,
                       bankTransfer: { ...paymentMethods.bankTransfer, bankName: value }
@@ -201,7 +201,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
                 <Label>Tipo de Cuenta</Label>
                 <Select 
                   value={paymentMethods.bankTransfer.accountType}
-                  onValueChange={(value) => 
+                  onValueChange={(value: string) => 
                     setPaymentMethods({
                       ...paymentMethods,
                       bankTransfer: { ...paymentMethods.bankTransfer, accountType: value }
@@ -265,7 +265,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
             </div>
             <Switch
               checked={paymentMethods.yape.enabled}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked: boolean) => 
                 setPaymentMethods({
                   ...paymentMethods,
                   yape: { ...paymentMethods.yape, enabled: checked }
@@ -308,7 +308,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
             </div>
             <Switch
               checked={paymentMethods.cash.enabled}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked: boolean) => 
                 setPaymentMethods({
                   ...paymentMethods,
                   cash: { ...paymentMethods.cash, enabled: checked }
