@@ -156,7 +156,7 @@ export function TeamsManagementScreen({ onBack }: TeamsManagementScreenProps) {
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     // Open team chat
                     alert(`Abriendo chat del equipo ${team.name}`);
@@ -170,7 +170,7 @@ export function TeamsManagementScreen({ onBack }: TeamsManagementScreenProps) {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       setSelectedTeam(team);
                     }}
