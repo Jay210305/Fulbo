@@ -83,7 +83,7 @@ export function ProfileSettingsScreen({ onBack }: ProfileSettingsScreenProps) {
           {/* Posición */}
           <div>
             <Label htmlFor="position">Posición Preferida</Label>
-            <Select value={profile.position} onValueChange={(value) => setProfile({ ...profile, position: value })}>
+            <Select value={profile.position} onValueChange={(value: string) => setProfile({ ...profile, position: value })}>
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Selecciona tu posición" />
               </SelectTrigger>
@@ -100,7 +100,7 @@ export function ProfileSettingsScreen({ onBack }: ProfileSettingsScreenProps) {
           {/* Nivel de Juego */}
           <div>
             <Label htmlFor="level">Nivel de Juego</Label>
-            <Select value={profile.level} onValueChange={(value) => setProfile({ ...profile, level: value })}>
+            <Select value={profile.level} onValueChange={(value: string) => setProfile({ ...profile, level: value })}>
               <SelectTrigger className="mt-2">
                 <SelectValue placeholder="Selecciona tu nivel" />
               </SelectTrigger>
@@ -275,7 +275,7 @@ export function ProfileSettingsScreen({ onBack }: ProfileSettingsScreenProps) {
             </div>
             <Switch
               checked={notifications.reservations}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, reservations: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, reservations: checked })}
             />
           </div>
 
@@ -289,7 +289,7 @@ export function ProfileSettingsScreen({ onBack }: ProfileSettingsScreenProps) {
             </div>
             <Switch
               checked={notifications.chats}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, chats: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, chats: checked })}
             />
           </div>
 
@@ -303,7 +303,7 @@ export function ProfileSettingsScreen({ onBack }: ProfileSettingsScreenProps) {
             </div>
             <Switch
               checked={notifications.promotions}
-              onCheckedChange={(checked) => setNotifications({ ...notifications, promotions: checked })}
+              onCheckedChange={(checked: boolean) => setNotifications({ ...notifications, promotions: checked })}
             />
           </div>
         </div>
