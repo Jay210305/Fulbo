@@ -21,11 +21,40 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
     setStep(2);
   };
 
-  const handleStep2 = () => {
-    setShowSuccess(true);
-    setTimeout(() => {
-      onComplete();
-    }, 2000);
+  const handleStep2 = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Llamada al Backend
+      const response = await fetch('http://localhost:4000/api/users/promote-to-manager', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          // Envía los datos que hayas capturado en el form
+          businessName: "Complejo X", 
+          ruc: "12345678901" 
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al registrarse como dueño');
+
+      // Actualizar el usuario local para que la UI sepa que es manager
+      const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      savedUser.role = 'manager';
+      localStorage.setItem('user', JSON.stringify(savedUser));
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        onComplete(); // Esto debería redirigir o recargar
+        window.location.reload(); // Para asegurar que la App vea el nuevo rol
+      }, 2000);
+
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   if (showSuccess) {
