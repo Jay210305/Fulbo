@@ -3,21 +3,45 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth.routes'; // <--- 1. Importar rutas
+import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+// Estos imports ya los tenías bien, son necesarios para el chat:
+import http from 'http';
+import { Server as SocketServer } from 'socket.io';
+import { connectMongoDB } from './config/mongo';
+import { chatSocketHandler } from './sockets/chat.socket';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// --- CONFIGURACIÓN DE SOCKETS Y SERVIDOR HTTP ---
+
+// 1. Creamos un servidor HTTP "crudo" usando Express como base
+// (Esto es obligatorio porque Socket.io necesita adherirse a un servidor HTTP real)
+const httpServer = http.createServer(app);
+
+// 2. Inicializamos Socket.io pegado a ese servidor
+const io = new SocketServer(httpServer, {
+  cors: {
+    origin: "*", // En desarrollo permitimos todo. En prod se restringe al frontend.
+    methods: ["GET", "POST"]
+  }
+});
+
+// 3. Conectamos la infraestructura del Chat
+connectMongoDB();      // Conecta a MongoDB
+chatSocketHandler(io); // Inicia la escucha de eventos del chat
+
+// --- MIDDLEWARES DE EXPRESS ---
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 
 // --- RUTAS ---
-// Todas las rutas de auth empezarán con /api/auth
-app.use('/api/auth', authRoutes); // <--- 2. Usar rutas
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
 app.get('/', (req: Request, res: Response) => {
@@ -28,7 +52,10 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-app.listen(PORT, () => {
+// --- INICIO DEL SERVIDOR ---
+// 4. IMPORTANTE: Usamos httpServer.listen en vez de app.listen
+httpServer.listen(PORT, () => {
   console.log(`\n🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📡 Esperando conexiones...`);
+  console.log(`📡 Esperando conexiones API...`);
+  console.log(`💬 Sistema de Chat (Sockets) listo y escuchando...`);
 });
