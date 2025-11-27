@@ -172,13 +172,26 @@ export default function App() {
   const [authState, setAuthState] = useState<AuthState>('splash');
   const [managerTab, setManagerTab] = useState('dashboard');
 
-  // Simulate splash screen auto-advance
+  // 1. EFECTO DE CARGA INICIAL (SPLASH Y VERIFICACIÓN DE SESIÓN)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (authState === 'splash') {
+    const checkSession = () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Si hay token, saltamos directo a autenticado
+        setAuthState('authenticated');
+      } else {
+        // Si no, mostramos login después del splash
         setAuthState('login');
       }
+    };
+
+    // Simulamos tiempo de splash (2 segundos)
+    const timer = setTimeout(() => {
+      if (authState === 'splash') {
+        checkSession();
+      }
     }, 2000);
+
     return () => clearTimeout(timer);
   }, [authState]);
 
@@ -187,6 +200,13 @@ export default function App() {
       setCurrentMode(currentMode === 'player' ? 'manager' : 'player');
     }
   }
+  
+  // Función para manejar el cierre de sesión (pásasela a PlayerProfile si la necesita)
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setAuthState('login');
+  };
 
   // Authentication flow
   if (authState === 'splash') {

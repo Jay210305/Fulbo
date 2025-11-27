@@ -16,28 +16,42 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
   const [password, setPassword] = useState("");
 
   const handleEmailLogin = async () => {
-  try {
-    const response = await fetch('http://localhost:3000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      // 1. Petición al Backend
+      const response = await fetch('http://localhost:4000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Error al iniciar sesión');
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al iniciar sesión');
+      }
+
+      // 2. CORRECCIÓN: Formatear datos antes de guardar
+      // Unimos first_name y last_name para crear 'name'
+      const userForFrontend = {
+        ...data.user,
+        name: `${data.user.first_name} ${data.user.last_name}`, 
+        email: data.user.email,
+        phone: data.user.phone_number || '',
+        phoneVerified: !!data.user.phone_number
+      };
+
+      // 3. Guardar en LocalStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userForFrontend));
+      
+      // 4. Actualizar estado y recargar para ver cambios
+      onLogin();
+      window.location.reload(); 
+
+    } catch (err: any) {
+      alert(err.message); 
     }
-
-    // ÉXITO
-    localStorage.setItem('token', data.token); // Guardar token
-    localStorage.setItem('user', JSON.stringify(data.user)); // Guardar datos básicos
-    
-    onLogin(); // Cambiar estado en App.tsx
-  } catch (err: any) {
-    alert(err.message); // O usa un estado para mostrar error en UI
-  }
-};
+  };
 
   if (!showEmailForm) {
     return (
