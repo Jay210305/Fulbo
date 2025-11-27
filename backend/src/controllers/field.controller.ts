@@ -4,6 +4,33 @@ import { FieldService } from '../services/field.service';
 export class FieldController {
   static async getFields(req: Request, res: Response) {
     try {
+      const { lat, lng } = req.query;
+
+      // Si recibimos lat/lng, buscamos por cercanía
+      if (lat && lng) {
+        const latitude = parseFloat(lat as string);
+        const longitude = parseFloat(lng as string);
+
+        const nearbyFields = await FieldService.getNearbyFields(latitude, longitude);
+
+        // Mapeo para el frontend
+        const response = nearbyFields.map((f: any) => ({
+            id: f.field_id,
+            name: f.name,
+            location: f.address,
+            distance: `${(f.distance_meters / 1000).toFixed(1)} km`, // Agregamos distancia
+            price: Number(f.base_price_per_hour),
+            image: f.image,
+            available: 5, // Mock
+            total: 10,    // Mock
+            type: '7v7',  // Mock
+            rating: 4.8   // Mock
+        }));
+
+        res.json(response);
+        return; // Importante terminar aquí
+      }
+
       const fields = await FieldService.getAllFields();
       
       // Mapeamos los datos para que coincidan con lo que espera el Frontend
