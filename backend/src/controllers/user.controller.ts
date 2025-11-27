@@ -90,4 +90,25 @@ export class UserController {
       res.status(500).json({ message: 'Error al verificar teléfono' });
     }
   }
+
+  // POST /api/users/promote-to-manager
+  static async promoteToManager(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.id;
+      const { businessName, ruc } = req.body; // Datos extra del registro de dueño
+
+      await prisma.users.update({
+        where: { user_id: userId },
+        data: { 
+          role: 'manager',
+          // Aquí podrías guardar businessName y ruc si tuvieras esas columnas,
+          // o guardarlos en una tabla separada 'managers'. Por ahora, solo cambiamos el rol.
+        }
+      });
+
+      res.json({ message: '¡Felicidades! Ahora eres un Manager.' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error al promover usuario' });
+    }
+  }
 }

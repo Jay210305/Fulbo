@@ -8,5 +8,6 @@ const router = Router();
 router.get('/profile', protect, UserController.getProfile);
 router.put('/profile', protect, UserController.updateProfile);
 router.post('/verify-phone', protect, UserController.verifyPhone);
+router.post('/promote-to-manager', protect, UserController.promoteToManager);
 
 export default router;
