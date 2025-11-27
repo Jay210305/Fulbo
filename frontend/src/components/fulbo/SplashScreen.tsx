@@ -1,4 +1,4 @@
-import shieldLogo from 'figma:asset/2068dbd9380c484f3b804acfa0e6103786f83524.png';
+import shieldLogo from '../../assets/2068dbd9380c484f3b804acfa0e6103786f83524.png';
 
 export function SplashScreen() {
   return (
