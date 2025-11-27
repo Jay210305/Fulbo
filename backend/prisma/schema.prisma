@@ -10,7 +10,7 @@ datasource db {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This table contains exclusion constraints and requires additional setup for migrations. Visit https://pris.ly/d/exclusion-constraints for more info.
 model bookings {
-  booking_id  String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  booking_id  String         @id @default(uuid()) @db.Uuid
   player_id   String         @db.Uuid
   field_id    String         @db.Uuid
   start_time  DateTime       @db.Timestamptz(6)
@@ -28,7 +28,7 @@ model bookings {
 }
 
 model field_photos {
-  photo_id   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  photo_id   String    @id @default(uuid()) @db.Uuid
   field_id   String    @db.Uuid
   image_url  String    @db.VarChar(1024)
   is_cover   Boolean?  @default(false)
@@ -37,7 +37,7 @@ model field_photos {
 }
 
 model fields {
-  field_id            String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  field_id            String                    @id @default(uuid()) @db.Uuid
   owner_id            String                    @db.Uuid
   name                String                    @db.VarChar(255)
   address             String
@@ -57,7 +57,7 @@ model fields {
 }
 
 model payments {
-  payment_id         String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  payment_id         String         @id @default(uuid()) @db.Uuid
   booking_id         String         @db.Uuid
   amount             Decimal        @db.Decimal(10, 2)
   status             payment_status @default(pending)
@@ -71,7 +71,7 @@ model payments {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model reviews {
-  review_id  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  review_id  String    @id @default(uuid()) @db.Uuid
   field_id   String    @db.Uuid
   player_id  String?   @db.Uuid
   rating     Int       @db.SmallInt
@@ -94,7 +94,7 @@ model spatial_ref_sys {
 }
 
 model users {
-  user_id          String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id          String             @id @default(uuid()) @db.Uuid
   email            String             @unique @db.VarChar(255)
   password_hash    String?            @db.VarChar(255)
   phone_number     String?            @db.VarChar(50)
