@@ -6,7 +6,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { CheckCircle2 } from "lucide-react";
-import shieldLogo from 'figma:asset/2068dbd9380c484f3b804acfa0e6103786f83524.png';
+import shieldLogo from '../../assets/2068dbd9380c484f3b804acfa0e6103786f83524.png';
 
 interface OwnerRegistrationProps {
   onComplete: () => void;

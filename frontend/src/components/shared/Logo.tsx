@@ -1,4 +1,4 @@
-import logoImage from 'figma:asset/de50d61e8377d6db4aad95a7d84860acb5619162.png';
+import logoImage from '../../assets/de50d61e8377d6db4aad95a7d84860acb5619162.png';
 
 interface LogoProps {
   variant?: 'default' | 'white';
