@@ -5,15 +5,12 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-<<<<<<< HEAD
 // Estos imports ya los tenías bien, son necesarios para el chat:
 import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { connectMongoDB } from './config/mongo';
 import { chatSocketHandler } from './sockets/chat.socket';
-=======
 import fieldRoutes from './routes/field.routes';
->>>>>>> fc5eee4d7019a44499fab3dd2718e1abb6078754
 
 dotenv.config();
 
