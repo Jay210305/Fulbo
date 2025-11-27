@@ -222,7 +222,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
                 <Label>Número de Cuenta</Label>
                 <Input
                   value={paymentMethods.bankTransfer.accountNumber}
-                  onChange={(e) => 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                     setPaymentMethods({
                       ...paymentMethods,
                       bankTransfer: { ...paymentMethods.bankTransfer, accountNumber: e.target.value }
@@ -237,7 +237,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
                 <Label>Titular de la Cuenta</Label>
                 <Input
                   value={paymentMethods.bankTransfer.accountHolder}
-                  onChange={(e) => 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                     setPaymentMethods({
                       ...paymentMethods,
                       bankTransfer: { ...paymentMethods.bankTransfer, accountHolder: e.target.value }
@@ -280,7 +280,7 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
                 <Label>Número de Celular</Label>
                 <Input
                   value={paymentMethods.yape.phoneNumber}
-                  onChange={(e) => 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                     setPaymentMethods({
                       ...paymentMethods,
                       yape: { ...paymentMethods.yape, phoneNumber: e.target.value }

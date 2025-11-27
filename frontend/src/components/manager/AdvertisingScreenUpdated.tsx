@@ -594,7 +594,7 @@ export function AdvertisingScreen() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Tipo de Promoción *</Label>
-              <Select value={newPromotion.type} onValueChange={(value: boolean) => setNewPromotion({ ...newPromotion, type: value as any })}>
+              <Select value={newPromotion.type} onValueChange={(value: string) => setNewPromotion({ ...newPromotion, type: value as any })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
