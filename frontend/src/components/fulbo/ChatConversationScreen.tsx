@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, MoreVertical, Send } from "lucide-react";
+import { ArrowLeft, MoreVertical, Send, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { io, Socket } from "socket.io-client";
 import { useUser } from "../../contexts/UserContext";
 
@@ -14,7 +16,7 @@ interface ChatConversationScreenProps {
 
 interface Message {
   id: string;
-  _id?: string; // Optional for Mongo ID
+  _id?: string;
   text: string;
   sender: "me" | "other";
   senderName?: string;
@@ -31,35 +33,36 @@ export function ChatConversationScreen({
   chatSubtitle,
   onBack,
 }: ChatConversationScreenProps) {
-  const { user } = useUser(); // Current logged in user
+  const { user } = useUser();
+  
+  // --- State ---
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  
+  // Invite User State
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
+  // Refs
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // --- Logic: Socket Connection & Data Fetching ---
-
   useEffect(() => {
     // 1. Fetch Chat History
     fetch(`${SOCKET_URL}/api/chats/${chatId}/messages`)
       .then((res) => res.json())
       .then((data) => {
-        // Format Mongo messages for the UI
         const formatted: Message[] = data.map((msg: any) => ({
           id: msg._id,
-          text: msg.content, // Assuming backend sends 'content' or 'message'
+          text: msg.content,
           sender: msg.senderId === user.email ? "me" : "other",
-          senderName:
-            msg.senderId === user.email ? "Yo" : msg.senderId.split("@")[0], // derived name
+          senderName: msg.senderId === user.email ? "Yo" : msg.senderId.split("@")[0],
           timestamp: new Date(msg.timestamp).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
-          avatar:
-            msg.senderId === user.email
-              ? undefined
-              : msg.senderId.charAt(0).toUpperCase(),
+          avatar: msg.senderId === user.email ? undefined : msg.senderId.charAt(0).toUpperCase(),
         }));
         setMessages(formatted);
       })
@@ -67,30 +70,37 @@ export function ChatConversationScreen({
 
     // 2. Initialize Socket
     socketRef.current = io(SOCKET_URL);
-
-    // Join Room
     socketRef.current.emit("join_room", chatId);
 
-    // Listen for incoming messages
+    // 3. Listen for incoming messages
     socketRef.current.on("receive_message", (data) => {
       const incomingMsg: Message = {
         id: data._id || Date.now().toString(),
         text: data.message,
         sender: data.senderId === user.email ? "me" : "other",
-        senderName:
-          data.senderId === user.email ? "Yo" : data.senderId.split("@")[0],
+        senderName: data.senderId === user.email ? "Yo" : data.senderId.split("@")[0],
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        avatar:
-          data.senderId === user.email
-            ? undefined
-            : data.senderId.charAt(0).toUpperCase(),
+        avatar: data.senderId === user.email ? undefined : data.senderId.charAt(0).toUpperCase(),
       };
-
       setMessages((prev) => [...prev, incomingMsg]);
     });
+
+    // 4. Auto-add self to room (Logic from Code 2)
+    // This ensures the user appears in the member list if they aren't already
+    const token = localStorage.getItem('token');
+    if (token) {
+        fetch(`${SOCKET_URL}/api/chats/${chatId}/users`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email: user.email })
+        }).catch(console.error);
+    }
 
     return () => {
       socketRef.current?.disconnect();
@@ -98,17 +108,11 @@ export function ChatConversationScreen({
   }, [chatId, user.email]);
 
   // --- Logic: Auto Scroll ---
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // --- Logic: Sending Messages ---
-
   const handleSendMessage = () => {
     if (newMessage.trim() && socketRef.current) {
       const messageData = {
@@ -116,15 +120,7 @@ export function ChatConversationScreen({
         message: newMessage,
         senderId: user.email,
       };
-
-      // Emit to server
       socketRef.current.emit("send_message", messageData);
-
-      // Note: We don't manually append to state here because we expect
-      // the server to broadcast it back via 'receive_message'.
-      // If your server DOES NOT echo back to sender, uncomment the line below:
-      // setMessages(prev => [...prev, { ...tempMessageObject }]);
-
       setNewMessage("");
     }
   };
@@ -136,12 +132,38 @@ export function ChatConversationScreen({
     }
   };
 
-  // --- UI: Rendering ---
+  // --- Logic: Invite User (From Code 2) ---
+  const handleInviteUser = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${SOCKET_URL}/api/chats/${chatId}/users`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email: inviteEmail })
+        });
+        if (res.ok) {
+            alert(`Usuario ${inviteEmail} agregado exitosamente.`);
+            setIsInviteOpen(false);
+            setInviteEmail('');
+        } else {
+            alert("Error al agregar usuario.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error de conexión");
+    }
+  };
 
+  // --- Render ---
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    // Fixed inset-0 ensures it covers the bottom nav bar (mobile fix)
+    <div className="fixed inset-0 z-50 bg-white flex flex-col h-[100dvh]">
+      
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-border p-4 z-10">
+      <div className="bg-white border-b border-border p-4 z-10 shadow-sm flex-none">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -157,7 +179,7 @@ export function ChatConversationScreen({
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <h2 className="truncate text-base">{chatTitle}</h2>
+            <h2 className="truncate text-base font-semibold">{chatTitle}</h2>
             {chatSubtitle && (
               <p className="text-xs text-muted-foreground truncate">
                 {chatSubtitle}
@@ -165,9 +187,41 @@ export function ChatConversationScreen({
             )}
           </div>
 
-          <button className="p-2 hover:bg-muted rounded-full">
-            <MoreVertical size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+             {/* Invite User Modal Trigger */}
+             <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+                <DialogTrigger asChild>
+                    <button className="p-2 hover:bg-muted rounded-full text-[#047857]">
+                        <UserPlus size={20} />
+                    </button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Agregar persona al chat</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <p className="text-sm text-gray-500">
+                            Ingresa el correo electrónico del usuario que deseas invitar.
+                        </p>
+                        <Input 
+                            placeholder="ejemplo@correo.com" 
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                        />
+                        <Button 
+                            onClick={handleInviteUser} 
+                            className="w-full bg-[#047857] hover:bg-[#047857]/90"
+                        >
+                            Agregar
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <button className="p-2 hover:bg-muted rounded-full">
+                <MoreVertical size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -185,7 +239,7 @@ export function ChatConversationScreen({
 
           return (
             <div
-              key={message.id}
+              key={message.id || index}
               className={`flex gap-2 ${
                 message.sender === "me" ? "justify-end" : "justify-start"
               }`}
@@ -234,7 +288,7 @@ export function ChatConversationScreen({
       </div>
 
       {/* Input Area */}
-      <div className="sticky bottom-0 bg-white border-t border-border p-4">
+      <div className="bg-white border-t border-border p-4 flex-none safe-area-bottom">
         <div className="flex items-end gap-2">
           <div className="flex-1 bg-input-background rounded-full px-4 py-2 flex items-center gap-2">
             <Input
