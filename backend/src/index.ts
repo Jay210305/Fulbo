@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes'; // <--- 1. Importar rutas
-
+import userRoutes from './routes/user.routes';
 dotenv.config();
 
 const app = express();
@@ -18,6 +18,7 @@ app.use(express.json());
 // --- RUTAS ---
 // Todas las rutas de auth empezarán con /api/auth
 app.use('/api/auth', authRoutes); // <--- 2. Usar rutas
+app.use('/api/users', userRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({
