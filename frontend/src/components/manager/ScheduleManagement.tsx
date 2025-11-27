@@ -470,7 +470,7 @@ export function ScheduleManagement() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Cancha *</Label>
-              <Select value={newReservation.field} onValueChange={(value) => setNewReservation({ ...newReservation, field: value })}>
+              <Select value={newReservation.field} onValueChange={(value: string) => setNewReservation({ ...newReservation, field: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar cancha..." />
                 </SelectTrigger>
@@ -490,12 +490,12 @@ export function ScheduleManagement() {
                 <Input
                   type="time"
                   value={newReservation.time}
-                  onChange={(e) => setNewReservation({ ...newReservation, time: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReservation({ ...newReservation, time: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Duración *</Label>
-                <Select value={newReservation.duration} onValueChange={(value) => setNewReservation({ ...newReservation, duration: value })}>
+                <Select value={newReservation.duration} onValueChange={(value: string) => setNewReservation({ ...newReservation, duration: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Duración" />
                   </SelectTrigger>
@@ -512,7 +512,7 @@ export function ScheduleManagement() {
               <Label>Nombre del Cliente *</Label>
               <Input
                 value={newReservation.customerName}
-                onChange={(e) => setNewReservation({ ...newReservation, customerName: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReservation({ ...newReservation, customerName: e.target.value })}
                 placeholder="Nombre completo"
               />
             </div>
@@ -522,7 +522,7 @@ export function ScheduleManagement() {
               <Input
                 type="tel"
                 value={newReservation.customerPhone}
-                onChange={(e) => setNewReservation({ ...newReservation, customerPhone: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReservation({ ...newReservation, customerPhone: e.target.value })}
                 placeholder="+51 987 654 321"
               />
             </div>
@@ -532,14 +532,14 @@ export function ScheduleManagement() {
               <Input
                 type="email"
                 value={newReservation.customerEmail}
-                onChange={(e) => setNewReservation({ ...newReservation, customerEmail: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReservation({ ...newReservation, customerEmail: e.target.value })}
                 placeholder="cliente@example.com"
               />
             </div>
 
             <div className="space-y-2">
               <Label>Estado de Pago *</Label>
-              <Select value={newReservation.paymentStatus} onValueChange={(value) => setNewReservation({ ...newReservation, paymentStatus: value as 'paid' | 'pending' })}>
+              <Select value={newReservation.paymentStatus} onValueChange={(value: string) => setNewReservation({ ...newReservation, paymentStatus: value as 'paid' | 'pending' })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

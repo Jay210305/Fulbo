@@ -160,7 +160,7 @@ export function PromotionsManagement({ fieldName, onBack }: PromotionsManagement
         <Label htmlFor="promoType">Tipo de Promoción *</Label>
         <Select 
           value={data.type} 
-          onValueChange={(value) => setData({ ...data, type: value })}
+          onValueChange={(value: string) => setData({ ...data, type: value })}
         >
           <SelectTrigger className="h-12">
             <SelectValue placeholder="Seleccionar tipo" />
@@ -481,7 +481,7 @@ export function PromotionsManagement({ fieldName, onBack }: PromotionsManagement
       )}
 
       {/* Deactivate Confirmation Dialog */}
-      <AlertDialog open={!!showDeactivateDialog} onOpenChange={(open) => !open && setShowDeactivateDialog(null)}>
+      <AlertDialog open={!!showDeactivateDialog} onOpenChange={(open: boolean) => !open && setShowDeactivateDialog(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Desactivar Promoción?</AlertDialogTitle>
