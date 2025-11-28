@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Star, MapPin, Car, Shirt, Lightbulb, ShoppingBag, TrendingUp, Wine, Edit2, X, Upload, Calendar, Check, ChevronLeft, ChevronRight, Wifi } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Star, MapPin, Car, Shirt, Lightbulb, ShoppingBag, TrendingUp, Wine, Edit2, X, Upload, Calendar, Check, ChevronLeft, ChevronRight, Wifi, Loader2, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Switch } from "../ui/switch";
@@ -20,72 +20,14 @@ import { ImageWithFallback } from "../figma/ImageWithFallback";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-
-const fields = [
-  {
-    id: 1,
-    name: 'Cancha Principal',
-    status: 'active',
-    rating: 4.8,
-    capacity: '11v11',
-    price: 50,
-    bookings: 18,
-    nextBooking: '15:00',
-    amenities: ['floodlights', 'parking', 'changing'],
-    hasFullVaso: true,
-    fullVasoPromo: '2x1 en cervezas al reservar + Piqueo gratis',
-    surface: 'Sintético',
-    maxCapacity: 22,
-    totalRevenue: 12450,
-    occupancyRate: 78,
-    description: 'Cancha principal de césped sintético de última generación',
-    images: ['https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800']
-  },
-  {
-    id: 2,
-    name: 'Cancha 2',
-    status: 'active',
-    rating: 4.6,
-    capacity: '7v7',
-    price: 35,
-    bookings: 12,
-    nextBooking: '16:30',
-    amenities: ['floodlights', 'parking'],
-    hasFullVaso: false,
-    fullVasoPromo: '',
-    surface: 'Sintético',
-    maxCapacity: 14,
-    totalRevenue: 8320,
-    occupancyRate: 65,
-    description: 'Cancha ideal para partidos de 7 vs 7',
-    images: ['https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800']
-  },
-  {
-    id: 3,
-    name: 'Cancha Interior',
-    status: 'maintenance',
-    rating: 4.7,
-    capacity: '5v5',
-    price: 40,
-    bookings: 8,
-    nextBooking: '-',
-    amenities: ['floodlights', 'changing'],
-    hasFullVaso: true,
-    fullVasoPromo: 'Balde de 5 cervezas con piqueo incluido - S/25',
-    surface: 'Grass Natural',
-    maxCapacity: 10,
-    totalRevenue: 5670,
-    occupancyRate: 45,
-    description: 'Cancha techada con grass natural',
-    images: ['https://images.unsplash.com/photo-1624880357913-a8539238245b?w=800']
-  }
-];
+import { managerApi, Field } from "../../services/manager.api";
 
 const amenityIcons: Record<string, any> = {
   floodlights: Lightbulb,
@@ -101,25 +43,82 @@ const amenityNames: Record<string, string> = {
   wifi: 'WiFi'
 };
 
-type FieldData = typeof fields[0];
+// Helper to convert backend Field to display format
+interface FieldDisplay {
+  id: string;
+  name: string;
+  status: 'active' | 'maintenance';
+  rating: number;
+  capacity: string;
+  price: number;
+  bookings: number;
+  nextBooking: string;
+  amenities: string[];
+  hasFullVaso: boolean;
+  fullVasoPromo: string;
+  surface: string;
+  maxCapacity: number;
+  totalRevenue: number;
+  occupancyRate: number;
+  description: string;
+  address: string;
+  images: string[];
+}
+
+function mapFieldToDisplay(field: Field): FieldDisplay {
+  const amenitiesArray = Object.entries(field.amenities || {})
+    .filter(([, value]) => value)
+    .map(([key]) => key);
+
+  return {
+    id: field.id,
+    name: field.name,
+    status: 'active',
+    rating: 4.5,
+    capacity: '7v7',
+    price: field.basePricePerHour,
+    bookings: field.stats.bookingsCount,
+    nextBooking: '-',
+    amenities: amenitiesArray,
+    hasFullVaso: field.promotions.some(p => p.isActive),
+    fullVasoPromo: field.promotions.find(p => p.isActive)?.description || '',
+    surface: 'Sintético',
+    maxCapacity: 14,
+    totalRevenue: 0,
+    occupancyRate: 0,
+    description: field.description || '',
+    address: field.address,
+    images: field.photos.length > 0 
+      ? field.photos.map(p => p.url) 
+      : ['https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800']
+  };
+}
 
 export function FieldManagement() {
+  // API state
+  const [fieldsData, setFieldsData] = useState<FieldDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // UI state
   const [showFulVaso, setShowFulVaso] = useState(false);
   const [showPromotions, setShowPromotions] = useState(false);
   const [selectedField, setSelectedField] = useState<string | null>(null);
-  const [fieldsData, setFieldsData] = useState(fields);
   
   // Modal states
   const [showAddField, setShowAddField] = useState(false);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showAvailability, setShowAvailability] = useState(false);
-  const [showFieldDetails, setShowFieldDetails] = useState<FieldData | null>(null);
-  const [showEditPrice, setShowEditPrice] = useState<FieldData | null>(null);
+  const [showFieldDetails, setShowFieldDetails] = useState<FieldDisplay | null>(null);
+  const [showEditPrice, setShowEditPrice] = useState<FieldDisplay | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<FieldDisplay | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
 
   // Form states
   const [newField, setNewField] = useState({
     name: '',
+    address: '',
     type: '',
     surface: '',
     maxCapacity: '',
@@ -129,7 +128,7 @@ export function FieldManagement() {
     description: ''
   });
 
-  const [selectedFieldsForBulk, setSelectedFieldsForBulk] = useState<number[]>([]);
+  const [selectedFieldsForBulk, setSelectedFieldsForBulk] = useState<string[]>([]);
   const [bulkEditData, setBulkEditData] = useState({
     priceAdjustment: '',
     adjustmentType: 'percentage' as 'percentage' | 'fixed'
@@ -150,7 +149,26 @@ export function FieldManagement() {
     promoDescription: ''
   });
 
-  const toggleFullVaso = (fieldId: number) => {
+  // Fetch fields on mount
+  useEffect(() => {
+    fetchFields();
+  }, []);
+
+  const fetchFields = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fields = await managerApi.fields.getAll();
+      setFieldsData(fields.map(mapFieldToDisplay));
+    } catch (err: any) {
+      console.error('Error fetching fields:', err);
+      setError(err.message || 'Error al cargar las canchas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFullVaso = (fieldId: string) => {
     setFieldsData(prev => prev.map(field => 
       field.id === fieldId 
         ? { ...field, hasFullVaso: !field.hasFullVaso }
@@ -158,7 +176,7 @@ export function FieldManagement() {
     ));
   };
 
-  const updateFullVasoPromo = (fieldId: number, promo: string) => {
+  const updateFullVasoPromo = (fieldId: string, promo: string) => {
     setFieldsData(prev => prev.map(field => 
       field.id === fieldId 
         ? { ...field, fullVasoPromo: promo }
@@ -166,24 +184,74 @@ export function FieldManagement() {
     ));
   };
 
-  const handleAddField = () => {
+  const handleAddField = async () => {
     if (currentStep < 4) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Save new field
-      console.log('New field created:', newField);
-      setShowAddField(false);
-      setCurrentStep(1);
-      setNewField({
-        name: '',
-        type: '',
-        surface: '',
-        maxCapacity: '',
-        basePrice: '',
-        peakHourPrice: '',
-        amenities: [],
-        description: ''
-      });
+      // Save new field to API
+      try {
+        setSaving(true);
+        const amenitiesObj: Record<string, boolean> = {};
+        newField.amenities.forEach(a => amenitiesObj[a] = true);
+
+        await managerApi.fields.create({
+          name: newField.name,
+          address: newField.address || 'Dirección por definir',
+          description: newField.description,
+          amenities: amenitiesObj,
+          basePricePerHour: parseFloat(newField.basePrice) || 0,
+        });
+
+        // Refresh the list
+        await fetchFields();
+
+        setShowAddField(false);
+        setCurrentStep(1);
+        setNewField({
+          name: '',
+          address: '',
+          type: '',
+          surface: '',
+          maxCapacity: '',
+          basePrice: '',
+          peakHourPrice: '',
+          amenities: [],
+          description: ''
+        });
+      } catch (err: any) {
+        console.error('Error creating field:', err);
+        setError(err.message || 'Error al crear la cancha');
+      } finally {
+        setSaving(false);
+      }
+    }
+  };
+
+  const handleUpdateField = async (fieldId: string, data: { basePricePerHour?: number; name?: string; address?: string; description?: string }) => {
+    try {
+      setSaving(true);
+      await managerApi.fields.update(fieldId, data);
+      await fetchFields();
+      setShowEditPrice(null);
+    } catch (err: any) {
+      console.error('Error updating field:', err);
+      setError(err.message || 'Error al actualizar la cancha');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteField = async (fieldId: string) => {
+    try {
+      setSaving(true);
+      await managerApi.fields.delete(fieldId);
+      await fetchFields();
+      setShowDeleteConfirm(null);
+    } catch (err: any) {
+      console.error('Error deleting field:', err);
+      setError(err.message || 'Error al eliminar la cancha');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -201,6 +269,18 @@ export function FieldManagement() {
         : [...prev.amenities, amenity]
     }));
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-[#047857]" />
+          <p className="text-muted-foreground">Cargando canchas...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showFulVaso && selectedField) {
     return (
@@ -229,20 +309,30 @@ export function FieldManagement() {
   return (
     <div className="min-h-screen bg-white pb-20">
       <div className="p-4 space-y-6">
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+            <p className="text-red-600 text-sm">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         <div>
           <h1 className="text-2xl mb-6">Gestión de Canchas</h1>
 
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-muted rounded-lg p-3 text-center">
-              <p className="text-xl text-[#047857] mb-1">3</p>
+              <p className="text-xl text-[#047857] mb-1">{fieldsData.filter(f => f.status === 'active').length}</p>
               <p className="text-xs text-muted-foreground">Canchas Activas</p>
             </div>
             <div className="bg-muted rounded-lg p-3 text-center">
-              <p className="text-xl text-[#047857] mb-1">S/ 2,450</p>
-              <p className="text-xs text-muted-foreground">Ingresos Hoy</p>
+              <p className="text-xl text-[#047857] mb-1">S/ {fieldsData.reduce((acc, f) => acc + f.totalRevenue, 0).toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Ingresos Total</p>
             </div>
             <div className="bg-muted rounded-lg p-3 text-center">
-              <p className="text-xl text-[#047857] mb-1">38</p>
+              <p className="text-xl text-[#047857] mb-1">{fieldsData.reduce((acc, f) => acc + f.bookings, 0)}</p>
               <p className="text-xs text-muted-foreground">Reservas</p>
             </div>
           </div>
@@ -259,6 +349,7 @@ export function FieldManagement() {
               variant="outline" 
               className="whitespace-nowrap"
               onClick={() => setShowBulkEdit(true)}
+              disabled={fieldsData.length === 0}
             >
               Edición Masiva
             </Button>
@@ -273,7 +364,23 @@ export function FieldManagement() {
         </div>
 
         <div className="space-y-4">
-          {fieldsData.map((field) => (
+          {fieldsData.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-border rounded-lg">
+              <MapPin size={48} className="mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg mb-2">No tienes canchas registradas</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Agrega tu primera cancha para comenzar a recibir reservas
+              </p>
+              <Button 
+                className="bg-[#047857] hover:bg-[#047857]/90"
+                onClick={() => setShowAddField(true)}
+              >
+                <Plus size={16} className="mr-2" />
+                Agregar Cancha
+              </Button>
+            </div>
+          ) : (
+            fieldsData.map((field) => (
             <div key={field.id} className="border border-border rounded-lg p-4 space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -299,9 +406,24 @@ export function FieldManagement() {
                       <span>{field.rating}</span>
                     </div>
                     <span>{field.capacity}</span>
+                    {field.address && (
+                      <div className="flex items-center gap-1">
+                        <MapPin size={14} />
+                        <span className="truncate max-w-[150px]">{field.address}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <Switch checked={field.status === 'active'} />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(field)}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                    title="Eliminar cancha"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <Switch checked={field.status === 'active'} />
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -419,7 +541,8 @@ export function FieldManagement() {
                 </Button>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </div>
 
@@ -464,6 +587,17 @@ export function FieldManagement() {
                       className="h-12"
                       value={newField.name}
                       onChange={(e) => setNewField({ ...newField, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fieldAddress">Dirección *</Label>
+                    <Input
+                      id="fieldAddress"
+                      placeholder="Ej: Av. Javier Prado 1234, San Isidro"
+                      className="h-12"
+                      value={newField.address}
+                      onChange={(e) => setNewField({ ...newField, address: e.target.value })}
                     />
                   </div>
 
@@ -1150,22 +1284,56 @@ export function FieldManagement() {
                 variant="outline"
                 className="flex-1"
                 onClick={() => setShowEditPrice(null)}
+                disabled={saving}
               >
                 Cancelar
               </Button>
               <Button
                 className="flex-1 bg-[#047857] hover:bg-[#047857]/90"
+                disabled={saving}
                 onClick={() => {
-                  console.log('Price updated:', editPriceData);
-                  setShowEditPrice(null);
+                  if (showEditPrice) {
+                    handleUpdateField(showEditPrice.id, {
+                      basePricePerHour: parseFloat(editPriceData.basePrice) || showEditPrice.price
+                    });
+                  }
                 }}
               >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Guardar Cambios
               </Button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar cancha?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar "{showDeleteConfirm?.name}"? 
+              Esta acción marcará la cancha como inactiva. El historial de reservas se conservará.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={saving}
+              onClick={() => {
+                if (showDeleteConfirm) {
+                  handleDeleteField(showDeleteConfirm.id);
+                }
+              }}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

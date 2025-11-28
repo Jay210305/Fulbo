@@ -132,6 +132,8 @@ model users {
   bookings         bookings[]
   fields           fields[]
   reviews          reviews[]
+
+  @@index([email], map: "idx_users_email")
 }
 
 enum booking_status {
