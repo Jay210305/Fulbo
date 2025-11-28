@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-export const generateToken = (userId: string, email: string) => {
+export const generateToken = (userId: string, email: string, role: string) => {
   const secret = process.env.JWT_SECRET;
   
   if (!secret) {
@@ -14,7 +14,7 @@ export const generateToken = (userId: string, email: string) => {
   };
 
   return jwt.sign(
-    { id: userId, email }, 
+    { id: userId, email, role }, 
     secret, 
     signInOptions
   );
