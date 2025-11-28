@@ -11,6 +11,7 @@ import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { connectMongoDB } from './config/mongo';
 import { chatSocketHandler } from './sockets/chat.socket';
+import { bookingSocketHandler } from './sockets/booking.socket';
 import fieldRoutes from './routes/field.routes';
 import bookingRoutes from './routes/booking.routes';
 import managerRoutes from './routes/manager.routes';
@@ -34,9 +35,10 @@ const io = new SocketServer(httpServer, {
   }
 });
 
-// 3. Conectamos la infraestructura del Chat
-connectMongoDB();      // Conecta a MongoDB
-chatSocketHandler(io); // Inicia la escucha de eventos del chat
+// 3. Conectamos la infraestructura del Chat y Booking
+connectMongoDB();           // Conecta a MongoDB
+chatSocketHandler(io);      // Inicia la escucha de eventos del chat
+bookingSocketHandler(io);   // Inicia la escucha de eventos de reservas
 
 // --- MIDDLEWARES DE EXPRESS ---
 app.use(cors());
