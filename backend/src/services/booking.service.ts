@@ -8,6 +8,7 @@ interface CreateBookingDto {
   endTime: string;   // ISO string
   totalPrice: number;
   paymentMethod?: string;
+  matchName?: string;
 }
 
 export class BookingService {
@@ -81,13 +82,14 @@ export class BookingService {
 
       if (user && user.email) {
         // Crear la sala con el ID de la reserva
+        const chatRoomName = data.matchName || `Partido ${start.toLocaleDateString()}`;
         await ChatRoom.create({
           roomId: result.booking_id,
-          name: `Partido ${start.toLocaleDateString()}`, // Nombre inicial
+          name: chatRoomName,
           members: [user.email],
           createdAt: new Date()
         });
-        console.log(`✅ Sala de chat creada para reserva: ${result.booking_id}`);
+        console.log(`✅ Sala de chat creada para reserva: ${result.booking_id} - ${chatRoomName}`);
       }
     } catch (error) {
       console.error("⚠️ Error creando sala de chat (No afecta la reserva):", error);

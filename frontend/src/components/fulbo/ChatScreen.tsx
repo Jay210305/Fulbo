@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -15,6 +15,7 @@ import { ChatConversationScreen } from "./ChatConversationScreen";
 import { CreateSearchScreen } from "./CreateSearchScreen";
 import { FriendsScreen } from "./FriendsScreen";
 import { useUser } from "../../contexts/UserContext";
+import { io, Socket } from "socket.io-client";
 
 // Interface merging both requirements: UI needs + Backend response
 interface ChatData {
@@ -31,13 +32,20 @@ interface ChatData {
 }
 
 const API_URL = "http://localhost:4000/api";
+const SOCKET_URL = "http://localhost:4000";
 
-export function ChatScreen() {
+interface ChatScreenProps {
+  matchName?: string; // Optional prop to trigger refresh after booking
+}
+
+export function ChatScreen({ matchName }: ChatScreenProps = {}) {
   const { user } = useUser();
+  const socketRef = useRef<Socket | null>(null);
 
   // --- State ---
   const [chats, setChats] = useState<ChatData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Navigation State (from Original)
   const [selectedChat, setSelectedChat] = useState<ChatData | null>(null);
@@ -46,54 +54,89 @@ export function ChatScreen() {
     useState<ChatData | null>(null);
   const [showFriends, setShowFriends] = useState(false);
 
-  // --- Logic: Fetch Data (from New Code) ---
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch(`${API_URL}/chats`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-
-          // Map backend data to UI Interface
-          // Note: Since backend currently returns { roomId, name, members },
-          // we fill missing UI fields with placeholders until backend is updated.
-          const formattedChats: ChatData[] = data.map((chat: any) => ({
-            id: chat.roomId,
-            matchName: chat.name || "Partido sin nombre",
-            fieldName: "Cancha", // Default text until backend sends venue
-            location: "Ver detalles",
-            date: "Próximamente",
-            time: "--:--",
-            lastMessage: `${chat.members?.length || 0} miembros en el chat`,
-            timestamp: "Hoy",
-            unread: 0,
-            members: chat.members,
-          }));
-
-          setChats(formattedChats);
-        } else {
-          console.error("Error cargando chats");
-        }
-      } catch (error) {
-        console.error("Error de conexión:", error);
-      } finally {
+  // Function to fetch chats - extracted for reuse
+  const fetchChats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
         setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/chats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+
+        // Map backend data to UI Interface
+        // Note: Since backend currently returns { roomId, name, members },
+        // we fill missing UI fields with placeholders until backend is updated.
+        const formattedChats: ChatData[] = data.map((chat: any) => ({
+          id: chat.roomId,
+          matchName: chat.name || "Partido sin nombre",
+          fieldName: "Cancha", // Default text until backend sends venue
+          location: "Ver detalles",
+          date: "Próximamente",
+          time: "--:--",
+          lastMessage: `${chat.members?.length || 0} miembros en el chat`,
+          timestamp: "Hoy",
+          unread: 0,
+          members: chat.members,
+        }));
+
+        setChats(formattedChats);
+      } else if (res.status === 401) {
+        // Token expired or invalid - user needs to re-login
+        console.error("Sesión expirada, por favor inicia sesión nuevamente");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.reload();
+      } else {
+        console.error("Error cargando chats");
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Logic: Fetch Data on mount and when dependencies change ---
+  useEffect(() => {
+    fetchChats();
+  }, [user, refreshTrigger]); // Re-fetch if user context changes or refresh triggered
+
+  // --- Trigger refresh when matchName prop changes (after booking) ---
+  useEffect(() => {
+    if (matchName) {
+      // Small delay to ensure backend has created the chat room
+      const timer = setTimeout(() => {
+        setRefreshTrigger(prev => prev + 1);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [matchName]);
+
+  // --- Socket connection for real-time chat list updates ---
+  useEffect(() => {
+    socketRef.current = io(SOCKET_URL);
+
+    // Listen for new chat room created events (for when you're added to a new room)
+    socketRef.current.on("chat_room_updated", () => {
+      setRefreshTrigger(prev => prev + 1);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
       }
     };
-
-    fetchChats();
-  }, [user]); // Re-fetch if user context changes
+  }, []);
 
   // --- Conditional Rendering for Sub-screens (from Original) ---
 

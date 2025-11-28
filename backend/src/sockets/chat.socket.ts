@@ -11,6 +11,13 @@ export const chatSocketHandler = (io: Server) => {
       console.log(`Usuario ${socket.id} se unió a la sala: ${roomId}`);
     });
 
+    // Event: User joins a new chat (for real-time updates)
+    socket.on("user_joined_chat", (data) => {
+      // Notify all connected clients to refresh their chat lists
+      io.emit("chat_room_updated", { roomId: data.roomId });
+      console.log(`🔔 Notificando actualización de chat: ${data.roomId}`);
+    });
+
     // Event: Send Message (Async to handle Database)
     socket.on("send_message", async (data) => {
       // Log for debugging (from snippet B)

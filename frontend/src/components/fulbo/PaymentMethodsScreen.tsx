@@ -108,6 +108,7 @@ export function PaymentMethodsScreen({
           endTime: endTime.toISOString(),
           totalPrice: grandTotal,
           paymentMethod: selectedMethod,
+          matchName: matchName,
         }),
       });
 
@@ -131,7 +132,7 @@ export function PaymentMethodsScreen({
         players: 1,
         maxPlayers: 14,
         hasRival: false,
-        chatId: `chat-${data.booking_id}`,
+        chatId: data.booking_id, // Use booking_id directly to match backend roomId
         isPending: false,
       };
 
