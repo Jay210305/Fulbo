@@ -11,8 +11,10 @@ import http from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { connectMongoDB } from './config/mongo';
 import { chatSocketHandler } from './sockets/chat.socket';
+import { bookingSocketHandler } from './sockets/booking.socket';
 import fieldRoutes from './routes/field.routes';
 import bookingRoutes from './routes/booking.routes';
+import managerRoutes from './routes/manager.routes';
 
 dotenv.config();
 
@@ -33,9 +35,10 @@ const io = new SocketServer(httpServer, {
   }
 });
 
-// 3. Conectamos la infraestructura del Chat
-connectMongoDB();      // Conecta a MongoDB
-chatSocketHandler(io); // Inicia la escucha de eventos del chat
+// 3. Conectamos la infraestructura del Chat y Booking
+connectMongoDB();           // Conecta a MongoDB
+chatSocketHandler(io);      // Inicia la escucha de eventos del chat
+bookingSocketHandler(io);   // Inicia la escucha de eventos de reservas
 
 // --- MIDDLEWARES DE EXPRESS ---
 app.use(cors());
@@ -49,6 +52,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/fields', fieldRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/manager', managerRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({

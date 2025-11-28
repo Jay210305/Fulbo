@@ -34,4 +34,57 @@ export class BookingController {
       }
     }
   }
+
+  static async cancelBooking(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.id;
+      const { bookingId } = req.params;
+
+      if (!bookingId) {
+        res.status(400).json({ message: 'ID de reserva requerido' });
+        return;
+      }
+
+      const booking = await BookingService.cancelBooking(bookingId, userId);
+
+      res.status(200).json({ 
+        message: 'Reserva cancelada exitosamente',
+        booking 
+      });
+    } catch (error: any) {
+      if (error.message === 'BOOKING_NOT_FOUND') {
+        res.status(404).json({ message: 'Reserva no encontrada' });
+      } else if (error.message === 'BOOKING_ALREADY_CANCELLED') {
+        res.status(400).json({ message: 'La reserva ya fue cancelada' });
+      } else if (error.message === 'UNAUTHORIZED_CANCELLATION') {
+        res.status(403).json({ message: 'No tienes permiso para cancelar esta reserva' });
+      } else {
+        console.error(error);
+        res.status(500).json({ message: 'Error al cancelar la reserva' });
+      }
+    }
+  }
+
+  static async getBooking(req: AuthRequest, res: Response) {
+    try {
+      const { bookingId } = req.params;
+
+      if (!bookingId) {
+        res.status(400).json({ message: 'ID de reserva requerido' });
+        return;
+      }
+
+      const booking = await BookingService.getBookingById(bookingId);
+
+      if (!booking) {
+        res.status(404).json({ message: 'Reserva no encontrada' });
+        return;
+      }
+
+      res.status(200).json(booking);
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ message: 'Error al obtener la reserva' });
+    }
+  }
 }
