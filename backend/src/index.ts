@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import chatRoutes from './routes/chat.routes';
 // Estos imports ya los tenías bien, son necesarios para el chat:
 import http from 'http';
 import { Server as SocketServer } from 'socket.io';
@@ -47,6 +48,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/fields', fieldRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/chats', chatRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({

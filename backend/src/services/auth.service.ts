@@ -50,7 +50,7 @@ export class AuthService {
     });
 
     // 4. Generar el Token inmediatamente (AUTO-LOGIN)
-    const token = generateToken(newUser.user_id);
+    const token = generateToken(newUser.user_id, newUser.email);
 
     // 5. Retornar usuario y token
     const { password_hash, ...userWithoutPassword } = newUser;
@@ -85,7 +85,7 @@ export class AuthService {
     }
 
     // 4. Generar Token JWT [cite: 39]
-    const token = generateToken(user.user_id);
+    const token = generateToken(user.user_id, user.email);
 
     // 5. Retornar usuario (sin pass) y token
     const { password_hash, ...userWithoutPassword } = user;
