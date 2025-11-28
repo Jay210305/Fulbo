@@ -16,16 +16,29 @@ interface OwnerRegistrationProps {
 export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationProps) {
   const [step, setStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    businessName: '',
+    ruc: '',
+    address: '',
+    phone: ''
+  });
 
   const handleStep1 = () => {
+    if (!formData.businessName || !formData.ruc) {
+      alert('Por favor completa los datos del negocio');
+      return;
+    }
     setStep(2);
   };
 
-  const handleStep2 = async () => {
+  const handleCompleteRegistration = async () => {
+    setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
       
-      // Llamada al Backend
+      // CONEXIÓN AL BACKEND REAL
       const response = await fetch('http://localhost:4000/api/users/promote-to-manager', {
         method: 'POST',
         headers: {
@@ -33,27 +46,33 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          // Envía los datos que hayas capturado en el form
-          businessName: "Complejo X", 
-          ruc: "12345678901" 
+          businessName: formData.businessName,
+          ruc: formData.ruc,
+          // En un sistema real, guardaríamos estos datos en una tabla 'businesses'
         }),
       });
 
-      if (!response.ok) throw new Error('Error al registrarse como dueño');
+      if (!response.ok) {
+        throw new Error('Error al registrarse como dueño');
+      }
 
-      // Actualizar el usuario local para que la UI sepa que es manager
+      // Actualizar localStorage para reflejar el nuevo rol inmediatamente
       const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
-      savedUser.role = 'manager';
+      savedUser.role = 'manager'; // Forzamos el rol en local
       localStorage.setItem('user', JSON.stringify(savedUser));
 
+      // Mostrar éxito
       setShowSuccess(true);
       setTimeout(() => {
-        onComplete(); // Esto debería redirigir o recargar
-        window.location.reload(); // Para asegurar que la App vea el nuevo rol
+        onComplete();
+        window.location.reload(); // Recargar para que la App vea el nuevo rol
       }, 2000);
 
     } catch (error) {
       console.error(error);
+      alert('Hubo un error al procesar tu solicitud');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,6 +117,8 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
                 id="businessName" 
                 placeholder="Ej: Complejo Deportivo La Merced" 
                 className="h-12" 
+                value={formData.businessName}
+                onChange={(e) => setFormData({...formData, businessName: e.target.value})}
               />
             </div>
 
@@ -107,6 +128,8 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
                 id="ruc" 
                 placeholder="Número de RUC" 
                 className="h-12" 
+                value={formData.ruc}
+                onChange={(e) => setFormData({...formData, ruc: e.target.value})}
               />
             </div>
 
@@ -181,68 +204,14 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
         </div>
 
         <div className="space-y-4">
+           {/* Inputs visuales del paso 2 (no conectados a backend por ahora, solo el submit) */}
           <div className="space-y-2">
-            <Label htmlFor="numFields">Número de Canchas</Label>
-            <Select>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="¿Cuántas canchas tienes?" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 cancha</SelectItem>
-                <SelectItem value="2">2 canchas</SelectItem>
-                <SelectItem value="3">3 canchas</SelectItem>
-                <SelectItem value="4">4 o más canchas</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Número de Canchas</Label>
+            <Select><SelectTrigger className="h-12"><SelectValue placeholder="¿Cuántas canchas tienes?"/></SelectTrigger><SelectContent><SelectItem value="1">1</SelectItem></SelectContent></Select>
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="fieldTypes">Tipos de Cancha</Label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Fútbol 11</span>
-              </label>
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Fútbol 7</span>
-              </label>
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Fútbol 5</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="services">Servicios Disponibles</Label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Iluminación</span>
-              </label>
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Estacionamiento</span>
-              </label>
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Vestuarios</span>
-              </label>
-              <label className="flex items-center gap-2 p-3 bg-muted rounded-lg cursor-pointer">
-                <input type="checkbox" className="w-4 h-4" />
-                <span>Cafetería</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción (opcional)</Label>
-            <Textarea 
-              id="description" 
-              placeholder="Describe tu complejo deportivo..."
-              rows={3}
-            />
+             <Label>Descripción</Label>
+             <Textarea placeholder="Describe tu complejo..."/>
           </div>
         </div>
 
@@ -250,8 +219,12 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
           <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12">
             Atrás
           </Button>
-          <Button onClick={handleStep2} className="flex-1 h-12 bg-[#289B5F] hover:bg-[#289B5F]/90">
-            Completar Registro
+          <Button 
+            onClick={handleCompleteRegistration} 
+            disabled={isLoading}
+            className="flex-1 h-12 bg-[#289B5F] hover:bg-[#289B5F]/90"
+          >
+            {isLoading ? 'Registrando...' : 'Completar Registro'}
           </Button>
         </div>
       </div>
