@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma';
+import ChatRoom from '../models/ChatRoom';
 
 interface CreateBookingDto {
   userId: string;
@@ -70,6 +71,27 @@ export class BookingService {
 
       return newBooking;
     });
+
+    // 3. Crear Sala de Chat en MongoDB (Sincronización)
+    try {
+      // Necesitamos el email del usuario para agregarlo al chat
+      const user = await prisma.users.findUnique({ 
+        where: { user_id: data.userId } 
+      });
+
+      if (user && user.email) {
+        // Crear la sala con el ID de la reserva
+        await ChatRoom.create({
+          roomId: result.booking_id,
+          name: `Partido ${start.toLocaleDateString()}`, // Nombre inicial
+          members: [user.email],
+          createdAt: new Date()
+        });
+        console.log(`✅ Sala de chat creada para reserva: ${result.booking_id}`);
+      }
+    } catch (error) {
+      console.error("⚠️ Error creando sala de chat (No afecta la reserva):", error);
+    }
 
     return result;
   }
