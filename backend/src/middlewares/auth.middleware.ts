@@ -31,13 +31,24 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-// ... (imports y función protect existentes)
-
+// --- NUEVO: Middleware para verificar rol de Manager ---
 export const isManager = (req: AuthRequest, res: Response, next: NextFunction) => {
-  // Verificamos si el usuario existe y si su rol es 'manager'
+  // Asumimos que el token ya fue decodificado por 'protect' y tenemos req.user
+  // NOTA: En un caso real, deberíamos consultar la BD para asegurar que el rol sigue vigente,
+  // pero para este MVP confiamos en el token o hacemos la consulta si req.user no tiene el rol.
+  
+  // Si el token JWT no trae el rol, podríamos necesitar buscarlo en la BD:
+  // const user = await prisma.users.findUnique(...) 
+  
+  // Para este Fast-Track, vamos a permitir pasar si el frontend dice que es manager
+  // o idealmente, el token debería traer el rol. 
+  // Vamos a implementar una verificación simple:
+  
   if (req.user && req.user.role === 'manager') {
     next();
   } else {
+    // Si el token no tiene el rol, rechazamos. 
+    // El Dev B necesitará que el endpoint de login incluya el rol en el token.
     res.status(403).json({ message: 'Acceso denegado: Se requiere rol de Manager' });
   }
 };
