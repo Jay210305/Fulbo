@@ -1,22 +1,26 @@
-import { useState } from "react";
-import { ArrowLeft, Camera, User, Mail, Lock, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Camera, User, Mail, Lock, Bell, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
+import { useUser } from "../../contexts/UserContext";
+import api from "../../services/api";
 
 interface ManagerProfileSettingsProps {
   onBack: () => void;
 }
 
 export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) {
+  const { user, updateUser } = useUser();
   const [activeView, setActiveView] = useState<'main' | 'personal' | 'password' | 'notifications'>('main');
+  const [saving, setSaving] = useState(false);
   
   const [personalData, setPersonalData] = useState({
-    name: 'Carlos Rodríguez',
-    email: 'carlos@fulbo.com',
-    phone: '+51 923 456 789'
+    name: '',
+    email: '',
+    phone: ''
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -32,22 +36,69 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
     promotions: true
   });
 
-  const handleUpdatePersonalData = () => {
-    alert('Datos personales actualizados');
-    setActiveView('main');
+  // Load user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setPersonalData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || ''
+      });
+    }
+  }, [user]);
+
+  const handleUpdatePersonalData = async () => {
+    try {
+      setSaving(true);
+      await api.put('/users/profile', {
+        name: personalData.name,
+        email: personalData.email,
+        phone: personalData.phone
+      });
+      updateUser({
+        name: personalData.name,
+        email: personalData.email,
+        phone: personalData.phone
+      });
+      setActiveView('main');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      alert('Error al actualizar los datos');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('Las contraseñas no coinciden');
       return;
     }
-    alert('Contraseña actualizada exitosamente');
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    setActiveView('main');
+    if (passwordData.newPassword.length < 8) {
+      alert('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await api.put('/users/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      alert('Contraseña actualizada exitosamente');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setActiveView('main');
+    } catch (err: unknown) {
+      console.error('Error changing password:', err);
+      alert(err instanceof Error ? err.message : 'Error al cambiar la contraseña');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveNotifications = () => {
+  const handleSaveNotifications = async () => {
+    // Note: This would need a backend endpoint to save notification preferences
+    // For now, we just show a success message
     alert('Preferencias de notificaciones guardadas');
     setActiveView('main');
   };
@@ -116,7 +167,9 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
           <Button 
             className="w-full h-12 bg-[#047857] hover:bg-[#047857]/90"
             onClick={handleUpdatePersonalData}
+            disabled={saving}
           >
+            {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Guardar Cambios
           </Button>
         </div>
@@ -172,8 +225,9 @@ export function ManagerProfileSettings({ onBack }: ManagerProfileSettingsProps) 
           <Button 
             className="w-full h-12 bg-[#047857] hover:bg-[#047857]/90"
             onClick={handleChangePassword}
-            disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+            disabled={saving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
           >
+            {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
             Actualizar Contraseña
           </Button>
         </div>

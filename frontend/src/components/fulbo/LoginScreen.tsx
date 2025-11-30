@@ -48,8 +48,8 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
       onLogin();
       window.location.reload(); 
 
-    } catch (err: any) {
-      alert(err.message); 
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al iniciar sesión'); 
     }
   };
 

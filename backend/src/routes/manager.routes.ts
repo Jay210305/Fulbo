@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { ManagerController } from '../controllers/manager.controller';
 import { ScheduleBlockController } from '../controllers/schedule-block.controller';
+import { StaffController } from '../controllers/staff.controller';
+import { PaymentSettingsController } from '../controllers/payment-settings.controller';
 import { protect, isManager } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -82,5 +84,54 @@ router.delete('/products/:id', ManagerController.deleteProduct);
 
 // PATCH /api/manager/products/:id/toggle-active - Toggle product active status
 router.patch('/products/:id/toggle-active', ManagerController.toggleProductActive);
+
+// ==================== BUSINESS PROFILE ROUTES ====================
+
+// GET /api/manager/profile - Get manager's business profile
+router.get('/profile', ManagerController.getBusinessProfile);
+
+// PUT /api/manager/profile - Create or update manager's business profile
+router.put('/profile', ManagerController.updateBusinessProfile);
+
+// ==================== BOOKINGS ROUTES ====================
+
+// GET /api/manager/bookings - List all bookings for manager's fields
+router.get('/bookings', ManagerController.getBookings);
+
+// ==================== STATS ROUTES ====================
+
+// GET /api/manager/stats - Get dashboard statistics
+router.get('/stats', ManagerController.getStats);
+
+// GET /api/manager/stats/chart - Get revenue chart data
+router.get('/stats/chart', ManagerController.getChartData);
+
+// ==================== STAFF ROUTES ====================
+
+// GET /api/manager/staff - List all staff members
+router.get('/staff', StaffController.getStaff);
+
+// GET /api/manager/staff/:id - Get a specific staff member
+router.get('/staff/:id', StaffController.getStaffMember);
+
+// POST /api/manager/staff - Create a new staff member
+router.post('/staff', StaffController.createStaff);
+
+// PUT /api/manager/staff/:id - Update a staff member
+router.put('/staff/:id', StaffController.updateStaff);
+
+// DELETE /api/manager/staff/:id - Delete a staff member
+router.delete('/staff/:id', StaffController.deleteStaff);
+
+// PATCH /api/manager/staff/:id/toggle-active - Toggle staff active status
+router.patch('/staff/:id/toggle-active', StaffController.toggleActive);
+
+// ==================== PAYMENT SETTINGS ROUTES ====================
+
+// GET /api/manager/payment-settings - Get payment settings
+router.get('/payment-settings', PaymentSettingsController.getSettings);
+
+// PUT /api/manager/payment-settings - Update payment settings
+router.put('/payment-settings', PaymentSettingsController.updateSettings);
 
 export default router;

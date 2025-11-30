@@ -271,5 +271,88 @@ export const FieldAvailabilityApi = {
     ),
 };
 
+// ==================== PROMOTION API ====================
+
+export type PromotionDiscountType = 'percentage' | 'fixed_amount';
+
+export interface Promotion {
+  id: string;
+  fieldId?: string;
+  fieldName?: string;
+  title: string;
+  description: string | null;
+  discountType: PromotionDiscountType;
+  discountValue: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePromotionDto {
+  title: string;
+  description?: string;
+  discountType: PromotionDiscountType;
+  discountValue: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface UpdatePromotionDto {
+  title?: string;
+  description?: string;
+  discountType?: PromotionDiscountType;
+  discountValue?: number;
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
+}
+
+interface PromotionResponse {
+  message: string;
+  promotion: Promotion;
+}
+
+export const PromotionApi = {
+  /**
+   * Get all promotions for a specific field
+   */
+  getByField: (fieldId: string) =>
+    api.get<Promotion[]>(`/manager/fields/${fieldId}/promotions`),
+
+  /**
+   * Get a specific promotion by ID
+   */
+  getById: (promotionId: string) =>
+    api.get<Promotion>(`/manager/promotions/${promotionId}`),
+
+  /**
+   * Create a new promotion for a field
+   */
+  create: (fieldId: string, data: CreatePromotionDto) =>
+    api.post<PromotionResponse>(`/manager/fields/${fieldId}/promotions`, data),
+
+  /**
+   * Update an existing promotion
+   */
+  update: (promotionId: string, data: UpdatePromotionDto) =>
+    api.put<PromotionResponse>(`/manager/promotions/${promotionId}`, data),
+
+  /**
+   * Delete a promotion (soft delete)
+   */
+  delete: (promotionId: string) =>
+    api.delete<{ message: string }>(`/manager/promotions/${promotionId}`),
+
+  /**
+   * Deactivate a promotion
+   */
+  deactivate: (promotionId: string) =>
+    api.patch<{ message: string; promotion: { id: string; isActive: boolean } }>(
+      `/manager/promotions/${promotionId}/deactivate`
+    ),
+};
+
 export { ApiError };
 export default api;

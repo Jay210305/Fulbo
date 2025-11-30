@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -20,7 +20,8 @@ import {
   Mail,
   X,
   Building2,
-  Bell
+  Bell,
+  Loader2
 } from "lucide-react";
 import {
   Dialog,
@@ -45,6 +46,8 @@ import { BusinessSettingsScreen } from "./BusinessSettingsScreen";
 import { ManagerProfileSettings } from "./ManagerProfileSettings";
 import { PaymentCollectionSettings } from "./PaymentCollectionSettings";
 import { HelpSupportScreen } from "./HelpSupportScreen";
+import { useUser } from "../../contexts/UserContext";
+import { managerApi } from "../../services/manager.api";
 
 interface ManagerProfileProps {
   isOwner: boolean;
@@ -52,6 +55,7 @@ interface ManagerProfileProps {
   onSwitchMode: () => void;
 }
 
+// Note: These boost plans are static/configuration data - would come from backend in production
 const boostPlans = [
   {
     id: 1,
@@ -77,13 +81,48 @@ const boostPlans = [
   }
 ];
 
+interface ManagerStats {
+  totalFields: number;
+  totalBookings: number;
+  // totalRevenue would need a backend endpoint
+}
+
 export function ManagerProfile({ isOwner, currentMode, onSwitchMode }: ManagerProfileProps) {
+  const { user, logout } = useUser();
   const [showStaffManagement, setShowStaffManagement] = useState(false);
   const [showBusinessSettings, setShowBusinessSettings] = useState(false);
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [showPaymentSettings, setShowPaymentSettings] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [stats, setStats] = useState<ManagerStats>({ totalFields: 0, totalBookings: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Fetch stats on mount
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoadingStats(true);
+        const fields = await managerApi.fields.getAll();
+        const totalBookings = fields.reduce((acc, f) => acc + f.stats.bookingsCount, 0);
+        setStats({
+          totalFields: fields.length,
+          totalBookings
+        });
+      } catch (err) {
+        console.error('Error fetching manager stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setShowLogoutDialog(false);
+    // Navigation will be handled by the app when user context changes
+  };
 
   if (showStaffManagement) {
     return <StaffManagementScreen onBack={() => setShowStaffManagement(false)} />;
@@ -124,13 +163,13 @@ export function ManagerProfile({ isOwner, currentMode, onSwitchMode }: ManagerPr
         <div className="flex items-center gap-4">
           <Avatar className="w-20 h-20">
             <AvatarFallback className="bg-[#047857] text-white text-2xl">
-              CR
+              {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1">
-            <h2 className="mb-1">Carlos Rodríguez</h2>
-            <p className="text-sm text-muted-foreground mb-2">carlos@fulbo.com</p>
+            <h2 className="mb-1">{user?.name || 'Usuario'}</h2>
+            <p className="text-sm text-muted-foreground mb-2">{user?.email || ''}</p>
             <div className="flex gap-2">
               <Badge className="bg-[#047857] hover:bg-[#047857]/90 text-white border-none">
                 <Shield size={12} className="mr-1" />
@@ -147,15 +186,23 @@ export function ManagerProfile({ isOwner, currentMode, onSwitchMode }: ManagerPr
           <h3 className="mb-3">Resumen de Cuenta</h3>
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-muted rounded-lg p-3 text-center">
-              <p className="text-xl text-[#047857] mb-1">S/ 45,820</p>
+              <p className="text-xl text-[#047857] mb-1">S/ --</p>
               <p className="text-xs text-muted-foreground">Ingresos Totales</p>
             </div>
             <div className="bg-muted rounded-lg p-3 text-center">
-              <p className="text-xl text-[#047857] mb-1">1,248</p>
+              {loadingStats ? (
+                <Loader2 className="h-5 w-5 animate-spin mx-auto text-[#047857]" />
+              ) : (
+                <p className="text-xl text-[#047857] mb-1">{stats.totalBookings.toLocaleString()}</p>
+              )}
               <p className="text-xs text-muted-foreground">Reservas Totales</p>
             </div>
             <div className="bg-muted rounded-lg p-3 text-center">
-              <p className="text-xl text-[#047857] mb-1">3</p>
+              {loadingStats ? (
+                <Loader2 className="h-5 w-5 animate-spin mx-auto text-[#047857]" />
+              ) : (
+                <p className="text-xl text-[#047857] mb-1">{stats.totalFields}</p>
+              )}
               <p className="text-xs text-muted-foreground">Canchas Activas</p>
             </div>
           </div>
@@ -305,10 +352,7 @@ export function ManagerProfile({ isOwner, currentMode, onSwitchMode }: ManagerPr
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction 
-                onClick={() => {
-                  setShowLogoutDialog(false);
-                  alert('Sesión cerrada exitosamente');
-                }}
+                onClick={handleLogout}
                 className="bg-destructive hover:bg-destructive/90"
               >
                 Cerrar Sesión

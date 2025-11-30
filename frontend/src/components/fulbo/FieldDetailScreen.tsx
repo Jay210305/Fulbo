@@ -3,36 +3,17 @@ import {
   ArrowLeft,
   MapPin,
   Star,
-  Droplets,
-  Shirt,
   Car,
   Lightbulb,
-  Wine,
   Clock,
   Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { useCart } from "../../contexts/CartContext";
 import { useUser } from "../../contexts/UserContext";
 import { PhoneVerificationModal } from "./PhoneVerificationModal";
-
-// Definimos la interfaz de la Cancha (similar a la lista pero puede tener más detalles)
-interface FieldDetail {
-  id: string;
-  name: string;
-  location: string;
-  image: string;
-  price: number;
-  type: string;
-  rating: number;
-  available: number;
-  total: number;
-  hasFullVaso: boolean;
-  amenities: string[];
-  products: any[]; // Simplificado por ahora
-}
+import { Field } from "../../types/field";
 
 interface FieldDetailScreenProps {
   fieldId: string; // Este será el UUID
@@ -50,14 +31,12 @@ export function FieldDetailScreen({
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const {
     cart,
-    addToCart,
-    updateQuantity,
     setReservationDetails,
     setDuration,
   } = useCart();
 
   // ESTADOS PARA DATOS REALES
-  const [field, setField] = useState<FieldDetail | null>(null);
+  const [field, setField] = useState<Field | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Cargar detalle de la cancha
@@ -80,12 +59,12 @@ export function FieldDetailScreen({
             data.field_photos?.[0]?.image_url ||
             "https://via.placeholder.com/400",
           // Mocks visuales
-          type: "Fútbol 7",
+          type: "7v7",
           rating: 4.8,
           available: 5,
           total: 10,
           hasFullVaso: false,
-          amenities: ["Duchas", "Estacionamiento"], // Podrías traer esto del JSON de amenities
+          amenities: ["Duchas", "Estacionamiento"],
           products: [],
         });
         setLoading(false);
@@ -109,7 +88,7 @@ export function FieldDetailScreen({
         return;
       }
       // Al guardar en el contexto, pasamos el objeto field que tiene el UUID correcto
-      setReservationDetails(field as any, selectedTime, "Hoy");
+      setReservationDetails(field, selectedTime, "Hoy");
       onContinueToCheckout();
     }
   };
@@ -118,7 +97,7 @@ export function FieldDetailScreen({
     updateUser({ phone, phoneVerified: true });
     setShowPhoneModal(false);
     if (selectedTime && field) {
-      setReservationDetails(field as any, selectedTime, "Hoy");
+      setReservationDetails(field, selectedTime, "Hoy");
       onContinueToCheckout();
     }
   };

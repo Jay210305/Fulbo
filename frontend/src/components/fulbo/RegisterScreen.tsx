@@ -104,9 +104,9 @@ export function RegisterScreen({ onRegister, onBack }: RegisterScreenProps) {
         window.location.reload(); // Recargar para actualizar contexto
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error de registro:", error);
-      alert(error.message);
+      alert(error instanceof Error ? error.message : 'Error al registrarse');
     } finally {
       setIsLoading(false);
     }
