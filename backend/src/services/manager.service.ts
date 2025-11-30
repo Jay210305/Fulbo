@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma';
-import { discount_type } from '@prisma/client';
+import { discount_type, product_category } from '@prisma/client';
 
 // --- DTOs ---
 interface CreateFieldDto {
@@ -34,6 +34,23 @@ interface UpdatePromotionDto {
   discountValue?: number;
   startDate?: Date;
   endDate?: Date;
+  isActive?: boolean;
+}
+
+interface CreateProductDto {
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  category: product_category;
+}
+
+interface UpdateProductDto {
+  name?: string;
+  description?: string;
+  price?: number;
+  imageUrl?: string;
+  category?: product_category;
   isActive?: boolean;
 }
 
@@ -335,6 +352,178 @@ export class ManagerService {
       where: { promotion_id: promotionId },
       data: {
         is_active: false,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  // ==================== PRODUCTS ====================
+
+  /**
+   * Get all products for a field (only if owned by the manager)
+   */
+  static async getProductsByField(fieldId: string, ownerId: string) {
+    // First verify field ownership
+    const field = await prisma.fields.findFirst({
+      where: {
+        field_id: fieldId,
+        owner_id: ownerId,
+        deleted_at: null,
+      },
+    });
+
+    if (!field) {
+      return null;
+    }
+
+    return prisma.products.findMany({
+      where: {
+        field_id: fieldId,
+        deleted_at: null,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Get a specific product (only if the field is owned by the manager)
+   */
+  static async getProductById(productId: string, ownerId: string) {
+    return prisma.products.findFirst({
+      where: {
+        product_id: productId,
+        deleted_at: null,
+        fields: {
+          owner_id: ownerId,
+          deleted_at: null,
+        },
+      },
+      include: {
+        fields: {
+          select: { field_id: true, name: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Create a product for a field (only if owned by the manager)
+   */
+  static async createProduct(fieldId: string, ownerId: string, data: CreateProductDto) {
+    // First verify field ownership
+    const field = await prisma.fields.findFirst({
+      where: {
+        field_id: fieldId,
+        owner_id: ownerId,
+        deleted_at: null,
+      },
+    });
+
+    if (!field) {
+      return null;
+    }
+
+    return prisma.products.create({
+      data: {
+        field_id: fieldId,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        image_url: data.imageUrl,
+        category: data.category,
+      },
+    });
+  }
+
+  /**
+   * Update a product (only if the field is owned by the manager)
+   */
+  static async updateProduct(productId: string, ownerId: string, data: UpdateProductDto) {
+    // Verify ownership through field relation
+    const product = await prisma.products.findFirst({
+      where: {
+        product_id: productId,
+        deleted_at: null,
+        fields: {
+          owner_id: ownerId,
+          deleted_at: null,
+        },
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    return prisma.products.update({
+      where: { product_id: productId },
+      data: {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        image_url: data.imageUrl,
+        category: data.category,
+        is_active: data.isActive,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Soft delete a product (only if the field is owned by the manager)
+   */
+  static async deleteProduct(productId: string, ownerId: string) {
+    // Verify ownership through field relation
+    const product = await prisma.products.findFirst({
+      where: {
+        product_id: productId,
+        deleted_at: null,
+        fields: {
+          owner_id: ownerId,
+          deleted_at: null,
+        },
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    // Soft delete
+    return prisma.products.update({
+      where: { product_id: productId },
+      data: {
+        deleted_at: new Date(),
+        is_active: false,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Toggle product active status (activate/deactivate)
+   */
+  static async toggleProductActive(productId: string, ownerId: string, isActive: boolean) {
+    // Verify ownership through field relation
+    const product = await prisma.products.findFirst({
+      where: {
+        product_id: productId,
+        deleted_at: null,
+        fields: {
+          owner_id: ownerId,
+          deleted_at: null,
+        },
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    return prisma.products.update({
+      where: { product_id: productId },
+      data: {
+        is_active: isActive,
         updated_at: new Date(),
       },
     });

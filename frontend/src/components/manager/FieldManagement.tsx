@@ -104,7 +104,7 @@ export function FieldManagement() {
   // UI state
   const [showFulVaso, setShowFulVaso] = useState(false);
   const [showPromotions, setShowPromotions] = useState(false);
-  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [selectedField, setSelectedField] = useState<{ id: string; name: string } | null>(null);
   
   // Modal states
   const [showAddField, setShowAddField] = useState(false);
@@ -285,7 +285,8 @@ export function FieldManagement() {
   if (showFulVaso && selectedField) {
     return (
       <FulVasoManagement
-        fieldName={selectedField}
+        fieldId={selectedField.id}
+        fieldName={selectedField.name}
         onBack={() => {
           setShowFulVaso(false);
           setSelectedField(null);
@@ -297,7 +298,7 @@ export function FieldManagement() {
   if (showPromotions && selectedField) {
     return (
       <PromotionsManagement
-        fieldName={selectedField}
+        fieldName={selectedField.name}
         onBack={() => {
           setShowPromotions(false);
           setSelectedField(null);
@@ -520,7 +521,7 @@ export function FieldManagement() {
                   size="sm"
                   className="text-[#047857] border-[#047857]"
                   onClick={() => {
-                    setSelectedField(field.name);
+                    setSelectedField({ id: field.id, name: field.name });
                     setShowFulVaso(true);
                   }}
                 >
@@ -532,7 +533,7 @@ export function FieldManagement() {
                   size="sm"
                   className="text-[#047857] border-[#047857]"
                   onClick={() => {
-                    setSelectedField(field.name);
+                    setSelectedField({ id: field.id, name: field.name });
                     setShowPromotions(true);
                   }}
                 >

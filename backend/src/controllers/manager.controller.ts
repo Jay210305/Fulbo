@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { ManagerService } from '../services/manager.service';
-import { discount_type } from '@prisma/client';
+import { discount_type, product_category } from '@prisma/client';
 
 export class ManagerController {
   // ==================== FIELDS ====================
@@ -466,6 +466,247 @@ export class ManagerController {
     } catch (error) {
       console.error('Error deactivating promotion:', error);
       res.status(500).json({ message: 'Error al desactivar la promoción' });
+    }
+  }
+
+  // ==================== PRODUCTS ====================
+
+  /**
+   * GET /api/manager/fields/:fieldId/products
+   * List all products for a field owned by the authenticated manager
+   */
+  static async getProducts(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const fieldId = req.params.fieldId;
+
+      const products = await ManagerService.getProductsByField(fieldId, ownerId);
+
+      if (products === null) {
+        return res.status(404).json({ message: 'Cancha no encontrada o no tienes permiso' });
+      }
+
+      const response = products.map((product) => ({
+        id: product.product_id,
+        name: product.name,
+        description: product.description,
+        price: Number(product.price),
+        image: product.image_url,
+        category: product.category,
+        isActive: product.is_active,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at,
+      }));
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      res.status(500).json({ message: 'Error al obtener productos' });
+    }
+  }
+
+  /**
+   * GET /api/manager/products/:id
+   * Get a specific product by ID
+   */
+  static async getProduct(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const productId = req.params.id;
+
+      const product = await ManagerService.getProductById(productId, ownerId);
+
+      if (!product) {
+        return res.status(404).json({ message: 'Producto no encontrado o no tienes permiso' });
+      }
+
+      res.json({
+        id: product.product_id,
+        fieldId: product.field_id,
+        fieldName: product.fields.name,
+        name: product.name,
+        description: product.description,
+        price: Number(product.price),
+        image: product.image_url,
+        category: product.category,
+        isActive: product.is_active,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at,
+      });
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      res.status(500).json({ message: 'Error al obtener el producto' });
+    }
+  }
+
+  /**
+   * POST /api/manager/fields/:fieldId/products
+   * Create a new product for a field owned by the authenticated manager
+   */
+  static async createProduct(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const fieldId = req.params.fieldId;
+      const { name, description, price, imageUrl, category } = req.body;
+
+      // Validation
+      if (!name || price === undefined || !category) {
+        return res.status(400).json({
+          message: 'Nombre, precio y categoría son obligatorios',
+        });
+      }
+
+      const validCategories: product_category[] = ['bebida', 'snack', 'equipo', 'promocion'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({
+          message: 'Categoría debe ser "bebida", "snack", "equipo" o "promocion"',
+        });
+      }
+
+      if (price <= 0) {
+        return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
+      }
+
+      const product = await ManagerService.createProduct(fieldId, ownerId, {
+        name,
+        description,
+        price,
+        imageUrl,
+        category: category as product_category,
+      });
+
+      if (!product) {
+        return res.status(404).json({ message: 'Cancha no encontrada o no tienes permiso' });
+      }
+
+      res.status(201).json({
+        message: 'Producto creado exitosamente',
+        product: {
+          id: product.product_id,
+          name: product.name,
+          description: product.description,
+          price: Number(product.price),
+          image: product.image_url,
+          category: product.category,
+          isActive: product.is_active,
+          createdAt: product.created_at,
+        },
+      });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      res.status(500).json({ message: 'Error al crear el producto' });
+    }
+  }
+
+  /**
+   * PUT /api/manager/products/:id
+   * Update a product
+   */
+  static async updateProduct(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const productId = req.params.id;
+      const { name, description, price, imageUrl, category, isActive } = req.body;
+
+      // Validate category if provided
+      if (category) {
+        const validCategories: product_category[] = ['bebida', 'snack', 'equipo', 'promocion'];
+        if (!validCategories.includes(category)) {
+          return res.status(400).json({
+            message: 'Categoría debe ser "bebida", "snack", "equipo" o "promocion"',
+          });
+        }
+      }
+
+      // Validate price if provided
+      if (price !== undefined && price <= 0) {
+        return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
+      }
+
+      const product = await ManagerService.updateProduct(productId, ownerId, {
+        name,
+        description,
+        price,
+        imageUrl,
+        category: category as product_category | undefined,
+        isActive,
+      });
+
+      if (!product) {
+        return res.status(404).json({ message: 'Producto no encontrado o no tienes permiso' });
+      }
+
+      res.json({
+        message: 'Producto actualizado exitosamente',
+        product: {
+          id: product.product_id,
+          name: product.name,
+          description: product.description,
+          price: Number(product.price),
+          image: product.image_url,
+          category: product.category,
+          isActive: product.is_active,
+          updatedAt: product.updated_at,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating product:', error);
+      res.status(500).json({ message: 'Error al actualizar el producto' });
+    }
+  }
+
+  /**
+   * DELETE /api/manager/products/:id
+   * Soft delete a product
+   */
+  static async deleteProduct(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const productId = req.params.id;
+
+      const product = await ManagerService.deleteProduct(productId, ownerId);
+
+      if (!product) {
+        return res.status(404).json({ message: 'Producto no encontrado o no tienes permiso' });
+      }
+
+      res.json({ message: 'Producto eliminado exitosamente' });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      res.status(500).json({ message: 'Error al eliminar el producto' });
+    }
+  }
+
+  /**
+   * PATCH /api/manager/products/:id/toggle-active
+   * Toggle product active status
+   */
+  static async toggleProductActive(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const productId = req.params.id;
+      const { isActive } = req.body;
+
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: 'isActive debe ser un valor booleano' });
+      }
+
+      const product = await ManagerService.toggleProductActive(productId, ownerId, isActive);
+
+      if (!product) {
+        return res.status(404).json({ message: 'Producto no encontrado o no tienes permiso' });
+      }
+
+      res.json({
+        message: isActive ? 'Producto activado exitosamente' : 'Producto desactivado exitosamente',
+        product: {
+          id: product.product_id,
+          isActive: product.is_active,
+        },
+      });
+    } catch (error) {
+      console.error('Error toggling product active status:', error);
+      res.status(500).json({ message: 'Error al cambiar el estado del producto' });
     }
   }
 }
