@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Calendar as CalendarIcon, Clock, Edit, MessageCircle, Plus, Phone, Mail, User, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Edit, MessageCircle, Plus, Phone, Mail, User, MapPin, Ban, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
@@ -21,6 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { 
+  ScheduleBlockApi, 
+  ScheduleBlock, 
+  ScheduleBlockReason,
+  BookingConflict,
+  ApiError 
+} from "../../services/api";
+import api from "../../services/api";
 
 interface Match {
   id: number;
@@ -34,6 +42,12 @@ interface Match {
   customerPhone: string;
   customerEmail: string;
   paymentStatus: 'paid' | 'pending';
+}
+
+interface Field {
+  id: string;
+  name: string;
+  type?: string;
 }
 
 const matches: Match[] = [
@@ -104,18 +118,36 @@ const matches: Match[] = [
   }
 ];
 
-const fields = [
-  { id: '1', name: 'Cancha Principal', type: '11v11' },
-  { id: '2', name: 'Cancha 2', type: '7v7' },
-  { id: '3', name: 'Cancha Interior', type: '5v5' }
-];
+const REASON_LABELS: Record<ScheduleBlockReason, string> = {
+  maintenance: 'Mantenimiento',
+  personal: 'Personal',
+  event: 'Evento',
+};
+
+const REASON_COLORS: Record<ScheduleBlockReason, string> = {
+  maintenance: 'bg-orange-500',
+  personal: 'bg-purple-500',
+  event: 'bg-blue-500',
+};
 
 export function ScheduleManagement() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [showEditModal, setShowEditModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  
+  // Fields state
+  const [fields, setFields] = useState<Field[]>([]);
+  const [loadingFields, setLoadingFields] = useState(true);
+  
+  // Schedule blocks state
+  const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([]);
+  const [blockError, setBlockError] = useState<string | null>(null);
+  const [savingBlock, setSavingBlock] = useState(false);
+  const [deletingBlockId, setDeletingBlockId] = useState<string | null>(null);
+  const [bookingConflicts, setBookingConflicts] = useState<BookingConflict[]>([]);
 
   // Create manual reservation state
   const [newReservation, setNewReservation] = useState({
@@ -127,6 +159,84 @@ export function ScheduleManagement() {
     customerEmail: '',
     paymentStatus: 'pending' as 'paid' | 'pending'
   });
+
+  // Create block state
+  const [newBlock, setNewBlock] = useState({
+    fieldId: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+    reason: '' as ScheduleBlockReason | '',
+    note: '',
+  });
+
+  // Fetch manager's fields
+  useEffect(() => {
+    const fetchFields = async () => {
+      try {
+        setLoadingFields(true);
+        const response = await api.get<Array<{ id: string; name: string }>>('/manager/fields');
+        setFields(response.map(f => ({ id: f.id, name: f.name })));
+      } catch (error) {
+        console.error('Error fetching fields:', error);
+      } finally {
+        setLoadingFields(false);
+      }
+    };
+    fetchFields();
+  }, []);
+
+  // Fetch schedule blocks
+  useEffect(() => {
+    const fetchBlocks = async () => {
+      try {
+        // Get blocks for the current month
+        const startDate = new Date();
+        startDate.setDate(1);
+        startDate.setHours(0, 0, 0, 0);
+        
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 2);
+        
+        const blocks = await ScheduleBlockApi.getAll({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        });
+        setScheduleBlocks(blocks);
+      } catch (error) {
+        console.error('Error fetching schedule blocks:', error);
+      }
+    };
+    fetchBlocks();
+  }, []);
+
+  // Check if a date has blocks
+  const dateHasBlocks = (checkDate: Date): boolean => {
+    return scheduleBlocks.some(block => {
+      const start = new Date(block.startTime);
+      const end = new Date(block.endTime);
+      const check = new Date(checkDate);
+      check.setHours(12, 0, 0, 0);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return check >= start && check <= end;
+    });
+  };
+
+  // Get blocks for selected date
+  const getBlocksForDate = (checkDate: Date | undefined): ScheduleBlock[] => {
+    if (!checkDate) return [];
+    return scheduleBlocks.filter(block => {
+      const start = new Date(block.startTime);
+      const end = new Date(block.endTime);
+      const check = new Date(checkDate);
+      check.setHours(12, 0, 0, 0);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      return check >= start && check <= end;
+    });
+  };
 
   const handleEditMatch = (match: Match) => {
     setSelectedMatch(match);
@@ -173,21 +283,130 @@ export function ScheduleManagement() {
     setShowContactModal(false);
   };
 
+  const handleOpenBlockModal = () => {
+    setBlockError(null);
+    setBookingConflicts([]);
+    setNewBlock({
+      fieldId: fields.length === 1 ? fields[0].id : '',
+      startDate: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      startTime: '08:00',
+      endDate: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      endTime: '18:00',
+      reason: '',
+      note: '',
+    });
+    setShowBlockModal(true);
+  };
+
+  const handleCreateBlock = async () => {
+    if (!newBlock.fieldId || !newBlock.startDate || !newBlock.startTime || 
+        !newBlock.endDate || !newBlock.endTime || !newBlock.reason) {
+      setBlockError('Por favor completa todos los campos obligatorios');
+      return;
+    }
+
+    setSavingBlock(true);
+    setBlockError(null);
+    setBookingConflicts([]);
+
+    try {
+      const startTime = new Date(`${newBlock.startDate}T${newBlock.startTime}:00`);
+      const endTime = new Date(`${newBlock.endDate}T${newBlock.endTime}:00`);
+
+      if (startTime >= endTime) {
+        setBlockError('La hora de inicio debe ser anterior a la hora de fin');
+        setSavingBlock(false);
+        return;
+      }
+
+      const response = await ScheduleBlockApi.create({
+        fieldId: newBlock.fieldId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        reason: newBlock.reason as ScheduleBlockReason,
+        note: newBlock.note || undefined,
+      });
+
+      // Add the new block to the list
+      setScheduleBlocks(prev => [...prev, response.block]);
+      setShowBlockModal(false);
+      setNewBlock({
+        fieldId: '',
+        startDate: '',
+        startTime: '',
+        endDate: '',
+        endTime: '',
+        reason: '',
+        note: '',
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 409) {
+          // Parse the error response to get conflicts
+          try {
+            const errorData = JSON.parse(error.message);
+            if (errorData.conflicts) {
+              setBookingConflicts(errorData.conflicts);
+              setBlockError('Existen reservas confirmadas en este rango de tiempo. Debes cancelarlas antes de crear el bloqueo.');
+            } else {
+              setBlockError(error.message);
+            }
+          } catch {
+            setBlockError('Ya existe un bloqueo que se superpone con este rango de tiempo');
+          }
+        } else {
+          setBlockError(error.message);
+        }
+      } else {
+        setBlockError('Error al crear el bloqueo. Intenta nuevamente.');
+      }
+    } finally {
+      setSavingBlock(false);
+    }
+  };
+
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este bloqueo?')) return;
+
+    setDeletingBlockId(blockId);
+    try {
+      await ScheduleBlockApi.delete(blockId);
+      setScheduleBlocks(prev => prev.filter(b => b.id !== blockId));
+    } catch (error) {
+      console.error('Error deleting block:', error);
+      alert('Error al eliminar el bloqueo');
+    } finally {
+      setDeletingBlockId(null);
+    }
+  };
+
+  const blocksForSelectedDate = getBlocksForDate(date);
+
   return (
     <div className="min-h-screen bg-white pb-20">
       <div className="p-4 space-y-6">
-        {/* Header with Create Button */}
+        {/* Header with Create Buttons */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl mb-1">Gestión de Horarios</h1>
-            <p className="text-sm text-muted-foreground">Administra tus reservas</p>
+            <p className="text-sm text-muted-foreground">Administra tus reservas y bloqueos</p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="w-12 h-12 bg-[#047857] hover:bg-[#047857]/90 rounded-full flex items-center justify-center text-white shadow-lg"
-          >
-            <Plus size={24} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleOpenBlockModal}
+              className="w-12 h-12 bg-orange-500 hover:bg-orange-600 rounded-full flex items-center justify-center text-white shadow-lg"
+              title="Bloquear horario"
+            >
+              <Ban size={24} />
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="w-12 h-12 bg-[#047857] hover:bg-[#047857]/90 rounded-full flex items-center justify-center text-white shadow-lg"
+              title="Crear reserva"
+            >
+              <Plus size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Quick Filters */}
@@ -208,14 +427,79 @@ export function ScheduleManagement() {
 
         {/* Calendar */}
         <div className="border border-border rounded-lg p-4">
-          <p className="text-sm mb-3">Seleccionar Fecha</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm">Seleccionar Fecha</p>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-orange-500"></div>
+                <span>Bloqueado</span>
+              </div>
+            </div>
+          </div>
           <Calendar
             mode="single"
             selected={date}
             onSelect={setDate}
             className="rounded-md border-0"
+            modifiers={{
+              blocked: (d: Date) => dateHasBlocks(d),
+            }}
+            modifiersStyles={{
+              blocked: {
+                backgroundColor: 'rgb(249 115 22 / 0.2)',
+                borderRadius: '0.375rem',
+              },
+            }}
           />
         </div>
+
+        {/* Schedule Blocks for Selected Date */}
+        {blocksForSelectedDate.length > 0 && (
+          <div className="border border-orange-200 bg-orange-50 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Ban size={18} className="text-orange-600" />
+              <h3 className="font-medium text-orange-800">
+                Bloqueos para {date?.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {blocksForSelectedDate.map((block) => (
+                <div key={block.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-10 rounded ${REASON_COLORS[block.reason]}`}></div>
+                    <div>
+                      <p className="font-medium">{block.fieldName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(block.startTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} - {new Date(block.endTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {REASON_LABELS[block.reason]}
+                        </Badge>
+                        {block.note && (
+                          <span className="text-xs text-muted-foreground">{block.note}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteBlock(block.id)}
+                    disabled={deletingBlockId === block.id}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  >
+                    {deletingBlockId === block.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Matches List */}
         <div>
@@ -287,6 +571,172 @@ export function ScheduleManagement() {
         </div>
       </div>
 
+      {/* Block Schedule Modal */}
+      <Dialog open={showBlockModal} onOpenChange={setShowBlockModal}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban size={20} className="text-orange-500" />
+              Bloquear Horario
+            </DialogTitle>
+            <DialogDescription>
+              Bloquea un rango de tiempo para mantenimiento, eventos o cierre personal.
+              Los jugadores no podrán reservar durante este período.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {blockError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle size={18} className="text-red-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-red-700">{blockError}</p>
+                    {bookingConflicts.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs font-medium text-red-600">Reservas en conflicto:</p>
+                        {bookingConflicts.map((conflict) => (
+                          <div key={conflict.bookingId} className="text-xs text-red-600">
+                            • {conflict.customerName} - {new Date(conflict.startTime).toLocaleString('es-ES')}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Cancha *</Label>
+              {loadingFields ? (
+                <div className="flex items-center gap-2 p-2 text-muted-foreground">
+                  <Loader2 size={16} className="animate-spin" />
+                  <span className="text-sm">Cargando canchas...</span>
+                </div>
+              ) : (
+                <Select 
+                  value={newBlock.fieldId} 
+                  onValueChange={(value: string) => setNewBlock({ ...newBlock, fieldId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar cancha..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fields.map((field) => (
+                      <SelectItem key={field.id} value={field.id}>
+                        {field.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Fecha Inicio *</Label>
+                <Input
+                  type="date"
+                  value={newBlock.startDate}
+                  onChange={(e) => setNewBlock({ ...newBlock, startDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora Inicio *</Label>
+                <Input
+                  type="time"
+                  value={newBlock.startTime}
+                  onChange={(e) => setNewBlock({ ...newBlock, startTime: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Fecha Fin *</Label>
+                <Input
+                  type="date"
+                  value={newBlock.endDate}
+                  onChange={(e) => setNewBlock({ ...newBlock, endDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora Fin *</Label>
+                <Input
+                  type="time"
+                  value={newBlock.endTime}
+                  onChange={(e) => setNewBlock({ ...newBlock, endTime: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Razón *</Label>
+              <Select 
+                value={newBlock.reason} 
+                onValueChange={(value: string) => setNewBlock({ ...newBlock, reason: value as ScheduleBlockReason })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar razón..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="maintenance">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded bg-orange-500"></div>
+                      Mantenimiento
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="personal">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded bg-purple-500"></div>
+                      Personal / Cierre
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="event">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded bg-blue-500"></div>
+                      Evento Privado
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Nota (Opcional)</Label>
+              <Textarea
+                value={newBlock.note}
+                onChange={(e) => setNewBlock({ ...newBlock, note: e.target.value })}
+                placeholder="Ej: Reparación de césped, Torneo corporativo..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBlockModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateBlock}
+              className="bg-orange-500 hover:bg-orange-600"
+              disabled={savingBlock || !newBlock.fieldId || !newBlock.startDate || !newBlock.startTime || !newBlock.endDate || !newBlock.endTime || !newBlock.reason}
+            >
+              {savingBlock ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Ban size={16} className="mr-2" />
+                  Crear Bloqueo
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Match Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-md">
@@ -307,7 +757,7 @@ export function ScheduleManagement() {
                   <SelectContent>
                     {fields.map((field) => (
                       <SelectItem key={field.id} value={field.name}>
-                        {field.name} ({field.type})
+                        {field.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -477,7 +927,7 @@ export function ScheduleManagement() {
                 <SelectContent>
                   {fields.map((field) => (
                     <SelectItem key={field.id} value={field.name}>
-                      {field.name} ({field.type})
+                      {field.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
