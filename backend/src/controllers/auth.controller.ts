@@ -82,4 +82,52 @@ export class AuthController {
       });
     }
   }
+
+  // --- NUEVO MÉTODO: SOCIAL LOGIN (Google/Facebook) ---
+  static async socialLogin(req: Request, res: Response) {
+    try {
+      const { email, firstName, lastName, provider, providerId, photoUrl } = req.body;
+
+      // 1. Validaciones básicas
+      if (!email || !firstName || !lastName || !provider || !providerId) {
+        res.status(400).json({ 
+          message: 'Faltan campos obligatorios para social login' 
+        });
+        return;
+      }
+
+      // 2. Validar que el provider sea válido
+      if (!['google', 'facebook'].includes(provider)) {
+        res.status(400).json({ 
+          message: 'Proveedor de autenticación no válido' 
+        });
+        return;
+      }
+
+      // 3. Llamada a la Capa de Servicio
+      const data = await AuthService.socialLogin({
+        email,
+        firstName,
+        lastName,
+        provider,
+        providerId,
+        photoUrl
+      });
+
+      // 4. Respuesta estandarizada
+      res.status(200).json({
+        status: 'success',
+        message: 'Social login exitoso',
+        token: data.token,
+        user: data.user,
+      });
+
+    } catch (error: any) {
+      console.error('Error en social login:', error);
+      res.status(500).json({ 
+        status: 'error', 
+        message: error.message || 'Error en autenticación social'
+      });
+    }
+  }
 }

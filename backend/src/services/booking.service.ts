@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma';
 import ChatRoom from '../models/ChatRoom';
 import { EmailService } from './email.service';
 import { emitNewBooking, emitBookingCancelled } from '../sockets/booking.socket';
+import { ScheduleBlockService } from './schedule-block.service';
 
 interface CreateBookingDto {
   userId: string;
@@ -17,6 +18,12 @@ export class BookingService {
   static async createBooking(data: CreateBookingDto) {
     const start = new Date(data.startTime);
     const end = new Date(data.endTime);
+
+    // 0. Check for schedule blocks (Maintenance, Personal closures, Events)
+    const isBlocked = await ScheduleBlockService.isTimeSlotBlocked(data.fieldId, start, end);
+    if (isBlocked) {
+      throw new Error('HORARIO_BLOQUEADO');
+    }
 
     // 1. Validar Disponibilidad (Crucial para evitar doble reserva)
     // Buscamos cualquier reserva que se solape en tiempo para esa cancha

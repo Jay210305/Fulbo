@@ -88,7 +88,15 @@ export function FieldListScreen({
       })
       .then((data) => {
         // Mapeamos para asegurar que la UI reciba lo que espera
-        const mappedFields = data.map((f: any) => ({
+        interface ApiField {
+          id: string;
+          name: string;
+          location: string;
+          price: number;
+          image: string;
+          type?: string;
+        }
+        const mappedFields = data.map((f: ApiField) => ({
           id: f.id, // Este es el UUID real
           name: f.name,
           location: f.location,

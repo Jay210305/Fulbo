@@ -69,4 +69,66 @@ export class FieldController {
         res.status(500).json({ message: 'Error al obtener detalle'});
     }
   }
+
+  /**
+   * GET /api/fields/:id/availability
+   * Get availability for a field within a date range
+   * Query params: startDate, endDate (ISO strings)
+   */
+  static async getFieldAvailability(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          message: 'startDate y endDate son requeridos' 
+        });
+      }
+
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ message: 'Formato de fecha inválido' });
+      }
+
+      // Verify field exists
+      const field = await FieldService.getFieldById(id);
+      if (!field) {
+        return res.status(404).json({ message: 'Cancha no encontrada' });
+      }
+
+      const availability = await FieldService.getFieldAvailability(id, start, end);
+
+      // Combine bookings and blocks into unavailable slots
+      const unavailableSlots = [
+        ...availability.bookings.map(b => ({
+          id: b.id,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          type: 'booking',
+          reason: null,
+        })),
+        ...availability.blocks.map(b => ({
+          id: b.id,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          type: 'block',
+          reason: b.reason,
+        })),
+      ].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+      res.json({
+        fieldId: id,
+        fieldName: field.name,
+        startDate: start,
+        endDate: end,
+        unavailableSlots,
+      });
+    } catch (error) {
+      console.error('Error fetching field availability:', error);
+      res.status(500).json({ message: 'Error al obtener disponibilidad' });
+    }
+  }
 }

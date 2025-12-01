@@ -70,4 +70,86 @@ export class FieldService {
       }
     });
   }
+
+  /**
+   * Get field availability for a date range, excluding booked slots and schedule blocks
+   */
+  static async getFieldAvailability(fieldId: string, startDate: Date, endDate: Date) {
+    // Get existing bookings (non-cancelled)
+    const bookings = await prisma.bookings.findMany({
+      where: {
+        field_id: fieldId,
+        status: { not: 'cancelled' },
+        start_time: { lt: endDate },
+        end_time: { gt: startDate },
+      },
+      select: {
+        booking_id: true,
+        start_time: true,
+        end_time: true,
+      },
+      orderBy: { start_time: 'asc' },
+    });
+
+    // Get schedule blocks
+    const blocks = await prisma.schedule_blocks.findMany({
+      where: {
+        field_id: fieldId,
+        start_time: { lt: endDate },
+        end_time: { gt: startDate },
+      },
+      select: {
+        block_id: true,
+        start_time: true,
+        end_time: true,
+        reason: true,
+      },
+      orderBy: { start_time: 'asc' },
+    });
+
+    return {
+      bookings: bookings.map(b => ({
+        id: b.booking_id,
+        startTime: b.start_time,
+        endTime: b.end_time,
+        type: 'booking' as const,
+      })),
+      blocks: blocks.map(b => ({
+        id: b.block_id,
+        startTime: b.start_time,
+        endTime: b.end_time,
+        reason: b.reason,
+        type: 'block' as const,
+      })),
+    };
+  }
+
+  /**
+   * Check if a time slot is available (not booked and not blocked)
+   */
+  static async isSlotAvailable(fieldId: string, startTime: Date, endTime: Date): Promise<boolean> {
+    // Check for overlapping bookings
+    const bookingOverlap = await prisma.bookings.findFirst({
+      where: {
+        field_id: fieldId,
+        status: { not: 'cancelled' },
+        OR: [
+          { start_time: { lt: endTime }, end_time: { gt: startTime } },
+        ],
+      },
+    });
+
+    if (bookingOverlap) return false;
+
+    // Check for overlapping schedule blocks
+    const blockOverlap = await prisma.schedule_blocks.findFirst({
+      where: {
+        field_id: fieldId,
+        start_time: { lt: endTime },
+        end_time: { gt: startTime },
+      },
+    });
+
+    return !blockOverlap;
+  }
 }
