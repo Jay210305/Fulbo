@@ -15,6 +15,16 @@ interface RegisterUserDto {
   phoneNumber?: string;
 }
 
+// Interface para Social Login (Google/Facebook)
+interface SocialLoginDto {
+  email: string;
+  firstName: string;
+  lastName: string;
+  provider: 'google' | 'facebook';
+  providerId: string;
+  photoUrl?: string;
+}
+
 export class AuthService {
   
   // --- MÉTODO EXISTENTE: REGISTRO ---
@@ -88,6 +98,57 @@ export class AuthService {
     const token = generateToken(user.user_id, user.email, user.role);
 
     // 5. Retornar usuario (sin pass) y token
+    const { password_hash, ...userWithoutPassword } = user;
+    
+    return { user: userWithoutPassword, token };
+  }
+
+  // --- NUEVO MÉTODO: SOCIAL LOGIN (Google/Facebook) ---
+  static async socialLogin(data: SocialLoginDto) {
+    // 1. Buscar si el usuario ya existe por email O por auth_provider_id
+    let user = await prisma.users.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+          { 
+            auth_provider: data.provider,
+            auth_provider_id: data.providerId 
+          }
+        ]
+      }
+    });
+
+    if (user) {
+      // Usuario existe - verificar si necesita actualizar auth_provider
+      if (user.auth_provider === 'email' && !user.auth_provider_id) {
+        // Usuario se registró con email, ahora vincula cuenta social
+        user = await prisma.users.update({
+          where: { user_id: user.user_id },
+          data: {
+            auth_provider: data.provider,
+            auth_provider_id: data.providerId
+          }
+        });
+      }
+    } else {
+      // Usuario no existe - crear nuevo usuario
+      user = await prisma.users.create({
+        data: {
+          email: data.email,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          auth_provider: data.provider,
+          auth_provider_id: data.providerId,
+          role: 'player',
+          // password_hash es null porque usa social login
+        }
+      });
+    }
+
+    // 2. Generar Token JWT
+    const token = generateToken(user.user_id, user.email, user.role);
+
+    // 3. Retornar usuario (sin pass) y token
     const { password_hash, ...userWithoutPassword } = user;
     
     return { user: userWithoutPassword, token };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, CreditCard, Building2, Banknote, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Building2, Banknote, Check, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -321,5 +321,3 @@ export function PaymentCollectionSettings({ onBack }: PaymentCollectionSettingsP
     </div>
   );
 }
-                  </SelectTrigger>
-                  <SelectContent>

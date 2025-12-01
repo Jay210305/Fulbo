@@ -1,19 +1,196 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Logo } from "../shared/Logo";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Mail } from "lucide-react";
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
+
+// Configuración - En producción, estas deberían estar en variables de entorno
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || 'YOUR_FACEBOOK_APP_ID';
+
+// Declaración de tipos para Facebook SDK
+declare global {
+  interface Window {
+    FB: {
+      init: (params: { appId: string; cookie: boolean; xfbml: boolean; version: string }) => void;
+      login: (callback: (response: FacebookLoginResponse) => void, params: { scope: string }) => void;
+      api: (path: string, callback: (response: FacebookUserResponse) => void) => void;
+    };
+    fbAsyncInit: () => void;
+  }
+}
+
+interface FacebookLoginResponse {
+  authResponse?: {
+    accessToken: string;
+    userID: string;
+  };
+  status: string;
+}
+
+interface FacebookUserResponse {
+  id: string;
+  name: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  picture?: {
+    data: {
+      url: string;
+    };
+  };
+}
 
 interface LoginScreenProps {
   onLogin: () => void;
   onRegister: () => void;
 }
 
-export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
+// Componente interno que usa los hooks de Google OAuth
+function LoginScreenContent({ onLogin, onRegister }: LoginScreenProps) {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Inicializar Facebook SDK
+  useEffect(() => {
+    // Cargar el SDK de Facebook
+    const loadFacebookSDK = () => {
+      if (document.getElementById('facebook-jssdk')) return;
+      
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          appId: FACEBOOK_APP_ID,
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        });
+      };
+
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/es_LA/sdk.js';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    };
+
+    loadFacebookSDK();
+  }, []);
+
+  // Función para manejar el login social (enviar datos al backend)
+  const handleSocialLoginSuccess = async (
+    provider: 'google' | 'facebook',
+    userData: { email: string; firstName: string; lastName: string; providerId: string; photoUrl?: string }
+  ) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('http://localhost:4000/api/auth/social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          provider: provider,
+          providerId: userData.providerId,
+          photoUrl: userData.photoUrl
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en autenticación social');
+      }
+
+      // Formatear datos para el frontend
+      const userForFrontend = {
+        ...data.user,
+        name: `${data.user.first_name} ${data.user.last_name}`,
+        email: data.user.email,
+        phone: data.user.phone_number || '',
+        phoneVerified: !!data.user.phone_number
+      };
+
+      // Guardar en LocalStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userForFrontend));
+
+      onLogin();
+      window.location.reload();
+
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error en autenticación social');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Hook de Google Login
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        // Obtener información del usuario usando el access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+        });
+        
+        const userInfo = await userInfoResponse.json();
+        
+        await handleSocialLoginSuccess('google', {
+          email: userInfo.email,
+          firstName: userInfo.given_name || userInfo.name?.split(' ')[0] || '',
+          lastName: userInfo.family_name || userInfo.name?.split(' ').slice(1).join(' ') || '',
+          providerId: userInfo.sub,
+          photoUrl: userInfo.picture
+        });
+      } catch (error) {
+        console.error('Error obteniendo info de Google:', error);
+        alert('Error al obtener información de Google');
+        setIsLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Error en Google Login:', error);
+      alert('Error al iniciar sesión con Google');
+    }
+  });
+
+  // Función para manejar login con Facebook
+  const handleFacebookLogin = () => {
+    if (!window.FB) {
+      alert('Facebook SDK no está cargado. Intenta de nuevo en unos segundos.');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    window.FB.login((response: FacebookLoginResponse) => {
+      if (response.authResponse) {
+        // Obtener datos del usuario
+        window.FB.api('/me?fields=id,name,email,first_name,last_name,picture', 
+          async (userResponse: FacebookUserResponse) => {
+            await handleSocialLoginSuccess('facebook', {
+              email: userResponse.email,
+              firstName: userResponse.first_name,
+              lastName: userResponse.last_name,
+              providerId: userResponse.id,
+              photoUrl: userResponse.picture?.data.url
+            });
+          }
+        );
+      } else {
+        setIsLoading(false);
+        console.log('Usuario canceló el login de Facebook');
+      }
+    }, { scope: 'email,public_profile' });
+  };
 
   const handleEmailLogin = async () => {
     try {
@@ -65,7 +242,8 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
             <Button
               variant="outline"
               className="w-full h-12 gap-3"
-              onClick={onLogin}
+              onClick={() => googleLogin()}
+              disabled={isLoading}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -73,29 +251,31 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Continuar con Google
+              {isLoading ? 'Cargando...' : 'Continuar con Google'}
             </Button>
 
             <Button
               variant="outline"
-              className="w-full h-12 gap-3"
-              onClick={onLogin}
+              className="w-full h-12 gap-3 opacity-50 cursor-not-allowed"
+              disabled={true}
+              title="Próximamente"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
               </svg>
-              Continuar con Apple
+              Continuar con Apple (Próximamente)
             </Button>
 
             <Button
               variant="outline"
               className="w-full h-12 gap-3"
-              onClick={onLogin}
+              onClick={handleFacebookLogin}
+              disabled={isLoading}
             >
               <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
-              Continuar con Facebook
+              {isLoading ? 'Cargando...' : 'Continuar con Facebook'}
             </Button>
 
             <Button
@@ -183,4 +363,13 @@ export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
     </div>
   );
   
+}
+
+// Componente principal que envuelve todo con el GoogleOAuthProvider
+export function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <LoginScreenContent onLogin={onLogin} onRegister={onRegister} />
+    </GoogleOAuthProvider>
+  );
 }
