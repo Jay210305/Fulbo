@@ -51,7 +51,15 @@ export function FieldMapScreen({ onBack }: FieldMapScreenProps) {
             // Mapeamos los datos del backend.
             // NOTA: Mantenemos los randoms para 'available' y 'rating' porque
             // el backend aún no calcula esa lógica compleja, pero la DATA BASE (nombre, precio, ubicación) es real.
-            const mappedFields = data.map((field: any) => ({
+            interface ApiField {
+              id: string;
+              name: string;
+              location: string;
+              distance?: string;
+              image: string;
+              price: number;
+            }
+            const mappedFields = data.map((field: ApiField) => ({
               id: field.id, // Asegúrate que el backend devuelva 'id' o mapea 'field_id'
               name: field.name,
               location: field.location, // El backend ya devuelve la dirección aquí

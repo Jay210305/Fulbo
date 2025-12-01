@@ -75,7 +75,12 @@ export function ChatScreen({ matchName }: ChatScreenProps = {}) {
         // Map backend data to UI Interface
         // Note: Since backend currently returns { roomId, name, members },
         // we fill missing UI fields with placeholders until backend is updated.
-        const formattedChats: ChatData[] = data.map((chat: any) => ({
+        interface ApiChat {
+          roomId: string;
+          name?: string;
+          members?: string[];
+        }
+        const formattedChats: ChatData[] = data.map((chat: ApiChat) => ({
           id: chat.roomId,
           matchName: chat.name || "Partido sin nombre",
           fieldName: "Cancha", // Default text until backend sends venue

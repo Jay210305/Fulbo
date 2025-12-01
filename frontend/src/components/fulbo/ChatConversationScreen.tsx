@@ -53,7 +53,13 @@ export function ChatConversationScreen({
     fetch(`${SOCKET_URL}/api/chats/${chatId}/messages`)
       .then((res) => res.json())
       .then((data) => {
-        const formatted: Message[] = data.map((msg: any) => ({
+        interface ApiMessage {
+          _id: string;
+          content: string;
+          senderId: string;
+          timestamp: string;
+        }
+        const formatted: Message[] = data.map((msg: ApiMessage) => ({
           id: msg._id,
           text: msg.content,
           sender: msg.senderId === user.email ? "me" : "other",

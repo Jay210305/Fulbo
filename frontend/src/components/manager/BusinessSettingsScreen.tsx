@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Building2, FileText, Bell, Check, Link2, CreditCard, BarChart3 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Building2, FileText, Bell, Check, Link2, CreditCard, BarChart3, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { managerApi, BusinessProfileSettings } from "../../services/manager.api";
 
 interface BusinessSettingsScreenProps {
   onBack: () => void;
@@ -21,17 +22,20 @@ interface BusinessSettingsScreenProps {
 
 export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Business data state
   const [businessData, setBusinessData] = useState({
-    businessName: 'Canchitas La Merced S.A.C.',
-    ruc: '20123456789',
-    address: 'Av. Principal 123, Tahuaycani, Juliaca',
-    phone: '+51 987 654 321',
-    email: 'contacto@lamerced.com'
+    businessName: '',
+    ruc: '',
+    address: '',
+    phone: '',
+    email: ''
   });
 
-  // Notification settings
+  // Notification settings (stored in settings JSON)
   const [notifications, setNotifications] = useState({
     newReservations: true,
     cancellations: true,
@@ -43,19 +47,143 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
     marketingUpdates: false
   });
 
-  // Integration settings
+  // Integration settings (stored in settings JSON)
   const [integrations, setIntegrations] = useState({
     pos: false,
     accounting: false,
     analytics: false
   });
 
-  const handleSaveBusinessData = () => {
-    setShowSuccessDialog(true);
+  // Fetch existing profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await managerApi.profile.get();
+        
+        if (response.profile) {
+          const { profile } = response;
+          setBusinessData({
+            businessName: profile.businessName || '',
+            ruc: profile.ruc || '',
+            address: profile.address || '',
+            phone: profile.phone || '',
+            email: profile.email || ''
+          });
+
+          // Load settings if they exist
+          if (profile.settings) {
+            const settings = profile.settings as BusinessProfileSettings;
+            setNotifications({
+              newReservations: settings.newReservations ?? true,
+              cancellations: settings.cancellations ?? true,
+              paymentReceived: settings.paymentReceived ?? true,
+              lowInventory: settings.lowInventory ?? false,
+              customerReviews: settings.customerReviews ?? true,
+              weeklyReport: settings.weeklyReport ?? true,
+              monthlyReport: settings.monthlyReport ?? true,
+              marketingUpdates: settings.marketingUpdates ?? false
+            });
+            setIntegrations({
+              pos: settings.posEnabled ?? false,
+              accounting: settings.accountingEnabled ?? false,
+              analytics: settings.analyticsEnabled ?? false
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching business profile:', err);
+        setError('Error al cargar el perfil de negocio');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // Combine all settings into the settings JSON
+  const buildSettingsObject = (): BusinessProfileSettings => ({
+    // Notification settings
+    newReservations: notifications.newReservations,
+    cancellations: notifications.cancellations,
+    paymentReceived: notifications.paymentReceived,
+    lowInventory: notifications.lowInventory,
+    customerReviews: notifications.customerReviews,
+    weeklyReport: notifications.weeklyReport,
+    monthlyReport: notifications.monthlyReport,
+    marketingUpdates: notifications.marketingUpdates,
+    // Integration settings
+    posEnabled: integrations.pos,
+    accountingEnabled: integrations.accounting,
+    analyticsEnabled: integrations.analytics,
+  });
+
+  const handleSaveBusinessData = async () => {
+    // Validate required fields
+    if (!businessData.businessName.trim()) {
+      setError('La Razón Social es obligatoria');
+      return;
+    }
+    if (!businessData.ruc.trim() || businessData.ruc.length !== 11) {
+      setError('El RUC debe tener 11 dígitos');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      await managerApi.profile.update({
+        businessName: businessData.businessName,
+        ruc: businessData.ruc,
+        address: businessData.address || undefined,
+        phone: businessData.phone || undefined,
+        email: businessData.email || undefined,
+        settings: buildSettingsObject(),
+      });
+
+      setShowSuccessDialog(true);
+    } catch (err: unknown) {
+      console.error('Error saving business profile:', err);
+      if (err && typeof err === 'object' && 'message' in err) {
+        setError((err as { message: string }).message);
+      } else {
+        setError('Error al guardar el perfil de negocio');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveNotifications = () => {
-    alert('Preferencias de notificaciones guardadas exitosamente');
+  const handleSaveNotifications = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+      
+      await managerApi.profile.update({
+        settings: buildSettingsObject(),
+      });
+
+      alert('Preferencias de notificaciones guardadas exitosamente');
+    } catch (err) {
+      console.error('Error saving notification preferences:', err);
+      setError('Error al guardar las preferencias de notificaciones');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-[#047857]" />
+          <p className="text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -72,6 +200,13 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
       </div>
 
       <div className="p-4 space-y-6">
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+
         {/* Business Data Section */}
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -140,9 +275,17 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
 
             <Button
               onClick={handleSaveBusinessData}
+              disabled={isSaving}
               className="w-full bg-[#047857] hover:bg-[#047857]/90"
             >
-              Guardar Datos de Facturación
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Datos de Facturación'
+              )}
             </Button>
           </div>
         </div>
@@ -341,9 +484,17 @@ export function BusinessSettingsScreen({ onBack }: BusinessSettingsScreenProps) 
 
             <Button
               onClick={handleSaveNotifications}
+              disabled={isSaving}
               className="w-full bg-[#047857] hover:bg-[#047857]/90"
             >
-              Guardar Preferencias
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Preferencias'
+              )}
             </Button>
           </div>
         </div>

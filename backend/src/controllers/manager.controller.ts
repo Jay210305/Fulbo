@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { ManagerService } from '../services/manager.service';
+import { BusinessProfileService } from '../services/business-profile.service';
 import { discount_type, product_category } from '@prisma/client';
 
 export class ManagerController {
@@ -707,6 +708,214 @@ export class ManagerController {
     } catch (error) {
       console.error('Error toggling product active status:', error);
       res.status(500).json({ message: 'Error al cambiar el estado del producto' });
+    }
+  }
+
+  // ==================== BUSINESS PROFILE ====================
+
+  /**
+   * GET /api/manager/profile
+   * Get the business profile for the authenticated manager
+   */
+  static async getBusinessProfile(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.id;
+
+      const profile = await BusinessProfileService.getByUserId(userId);
+
+      if (!profile) {
+        return res.status(404).json({ 
+          message: 'Perfil de negocio no encontrado',
+          profile: null 
+        });
+      }
+
+      // Map to frontend-friendly format (camelCase)
+      res.json({
+        profile: {
+          id: profile.profile_id,
+          userId: profile.user_id,
+          businessName: profile.business_name,
+          ruc: profile.ruc,
+          address: profile.address,
+          phone: profile.phone,
+          email: profile.email,
+          settings: profile.settings,
+          createdAt: profile.created_at,
+          updatedAt: profile.updated_at,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching business profile:', error);
+      res.status(500).json({ message: 'Error al obtener el perfil de negocio' });
+    }
+  }
+
+  /**
+   * PUT /api/manager/profile
+   * Create or update the business profile for the authenticated manager
+   */
+  static async updateBusinessProfile(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user.id;
+      const { businessName, ruc, address, phone, email, settings } = req.body;
+
+      // Check if this is a new profile (create) or existing (update)
+      const existingProfile = await BusinessProfileService.getByUserId(userId);
+
+      // Validate required fields for new profiles
+      if (!existingProfile) {
+        if (!businessName || !ruc) {
+          return res.status(400).json({ 
+            message: 'El nombre del negocio (Razón Social) y RUC son obligatorios para crear el perfil' 
+          });
+        }
+      }
+
+      // Validate RUC uniqueness if provided
+      if (ruc) {
+        const rucTaken = await BusinessProfileService.isRucTaken(ruc, userId);
+        if (rucTaken) {
+          return res.status(400).json({ message: 'El RUC ya está registrado por otro usuario' });
+        }
+      }
+
+      // Upsert the profile
+      const profile = await BusinessProfileService.upsert(userId, {
+        businessName,
+        ruc,
+        address,
+        phone,
+        email,
+        settings,
+      });
+
+      res.json({
+        message: existingProfile 
+          ? 'Perfil de negocio actualizado exitosamente' 
+          : 'Perfil de negocio creado exitosamente',
+        profile: {
+          id: profile!.profile_id,
+          userId: profile!.user_id,
+          businessName: profile!.business_name,
+          ruc: profile!.ruc,
+          address: profile!.address,
+          phone: profile!.phone,
+          email: profile!.email,
+          settings: profile!.settings,
+          createdAt: profile!.created_at,
+          updatedAt: profile!.updated_at,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating business profile:', error);
+      res.status(500).json({ message: 'Error al actualizar el perfil de negocio' });
+    }
+  }
+
+  // ==================== BOOKINGS ====================
+
+  /**
+   * GET /api/manager/bookings
+   * List all bookings for manager's fields with optional filters
+   */
+  static async getBookings(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const { startDate, endDate, fieldId, status } = req.query;
+
+      const filters: {
+        startDate?: Date;
+        endDate?: Date;
+        fieldId?: string;
+        status?: 'pending' | 'confirmed' | 'cancelled';
+      } = {};
+
+      if (startDate) {
+        filters.startDate = new Date(startDate as string);
+      }
+      if (endDate) {
+        filters.endDate = new Date(endDate as string);
+      }
+      if (fieldId) {
+        filters.fieldId = fieldId as string;
+      }
+      if (status && ['pending', 'confirmed', 'cancelled'].includes(status as string)) {
+        filters.status = status as 'pending' | 'confirmed' | 'cancelled';
+      }
+
+      const bookings = await ManagerService.getBookingsByOwner(ownerId, filters);
+
+      // Map to frontend-friendly format
+      const response = bookings.map((booking) => ({
+        id: booking.booking_id,
+        fieldId: booking.field_id,
+        fieldName: booking.fields.name,
+        startTime: booking.start_time,
+        endTime: booking.end_time,
+        totalPrice: Number(booking.total_price),
+        status: booking.status,
+        customer: booking.users ? {
+          id: booking.users.user_id,
+          name: `${booking.users.first_name} ${booking.users.last_name}`,
+          email: booking.users.email,
+          phone: booking.users.phone_number,
+        } : null,
+        paymentStatus: booking.payments.length > 0 
+          ? booking.payments[0].status 
+          : 'pending',
+        createdAt: booking.created_at,
+      }));
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching manager bookings:', error);
+      res.status(500).json({ message: 'Error al obtener las reservas' });
+    }
+  }
+
+  // ==================== STATS ====================
+
+  /**
+   * GET /api/manager/stats
+   * Get dashboard statistics for the manager
+   */
+  static async getStats(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const { period = 'today' } = req.query;
+
+      const validPeriods = ['today', 'week', 'month', 'all'];
+      const selectedPeriod = validPeriods.includes(period as string) 
+        ? (period as 'today' | 'week' | 'month' | 'all')
+        : 'today';
+
+      const stats = await ManagerService.getStats(ownerId, selectedPeriod);
+
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching manager stats:', error);
+      res.status(500).json({ message: 'Error al obtener las estadísticas' });
+    }
+  }
+
+  /**
+   * GET /api/manager/stats/chart
+   * Get revenue chart data for the manager
+   */
+  static async getChartData(req: AuthRequest, res: Response) {
+    try {
+      const ownerId = req.user.id;
+      const { days = '7' } = req.query;
+
+      const numDays = Math.min(Math.max(parseInt(days as string) || 7, 1), 30);
+
+      const chartData = await ManagerService.getRevenueChartData(ownerId, numDays);
+
+      res.json(chartData);
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+      res.status(500).json({ message: 'Error al obtener datos del gráfico' });
     }
   }
 }

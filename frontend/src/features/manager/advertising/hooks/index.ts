@@ -1,0 +1,1 @@
+export { useAdvertising } from './useAdvertising';
