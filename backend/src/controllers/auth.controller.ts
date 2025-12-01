@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
+import { RegisterInput, LoginInput, SocialLoginInput } from '../schemas/auth.schema';
 
 export class AuthController {
   
-  // --- MÉTODO DE REGISTRO (Ya lo tenías) ---
+  // --- MÉTODO DE REGISTRO ---
   static async register(req: Request, res: Response) {
     try {
       const { 
@@ -16,17 +17,9 @@ export class AuthController {
         documentNumber,
         city, 
         district 
-      } = req.body;
+      } = req.body as RegisterInput;
 
-      // Validaciones básicas
-      if (!email || !password || !firstName || !lastName) {
-         res.status(400).json({ 
-           error: 'Faltan campos obligatorios. Se requiere: email, password, firstName, lastName' 
-         });
-         return;
-      }
-
-      // Llamamos al servicio
+      // Llamamos al servicio (validación ya fue hecha por Zod middleware)
       const user = await AuthService.registerUser({
         email,
         password,
@@ -51,21 +44,14 @@ export class AuthController {
     }
   }
 
-  // --- NUEVO MÉTODO: LOGIN (FUSIONADO) ---
+  // --- MÉTODO: LOGIN ---
   static async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body;
+      const { email, password } = req.body as LoginInput;
 
-      // 1. Validaciones básicas de entrada
-      if (!email || !password) {
-        res.status(400).json({ message: 'Email y contraseña son obligatorios' });
-        return;
-      }
-
-      // 2. Llamada a la Capa de Servicio (Usando el método estático)
+      // Llamada a la Capa de Servicio (validación ya fue hecha por Zod middleware)
       const data = await AuthService.loginUser(email, password);
 
-      // 3. Respuesta estandarizada
       res.status(200).json({
         status: 'success',
         message: 'Login exitoso',
@@ -74,8 +60,6 @@ export class AuthController {
       });
 
     } catch (error: any) {
-      // Manejo de errores (Credenciales inválidas, usuario no existe, etc.)
-      // Usamos 401 Unauthorized para fallos de login
       res.status(401).json({ 
         status: 'error', 
         message: error.message 
@@ -83,28 +67,12 @@ export class AuthController {
     }
   }
 
-  // --- NUEVO MÉTODO: SOCIAL LOGIN (Google/Facebook) ---
+  // --- MÉTODO: SOCIAL LOGIN (Google/Facebook) ---
   static async socialLogin(req: Request, res: Response) {
     try {
-      const { email, firstName, lastName, provider, providerId, photoUrl } = req.body;
+      const { email, firstName, lastName, provider, providerId, photoUrl } = req.body as SocialLoginInput;
 
-      // 1. Validaciones básicas
-      if (!email || !firstName || !lastName || !provider || !providerId) {
-        res.status(400).json({ 
-          message: 'Faltan campos obligatorios para social login' 
-        });
-        return;
-      }
-
-      // 2. Validar que el provider sea válido
-      if (!['google', 'facebook'].includes(provider)) {
-        res.status(400).json({ 
-          message: 'Proveedor de autenticación no válido' 
-        });
-        return;
-      }
-
-      // 3. Llamada a la Capa de Servicio
+      // Llamada a la Capa de Servicio (validación ya fue hecha por Zod middleware)
       const data = await AuthService.socialLogin({
         email,
         firstName,
@@ -114,7 +82,6 @@ export class AuthController {
         photoUrl
       });
 
-      // 4. Respuesta estandarizada
       res.status(200).json({
         status: 'success',
         message: 'Social login exitoso',

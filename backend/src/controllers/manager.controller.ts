@@ -2,6 +2,16 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { ManagerService } from '../services/manager.service';
 import { BusinessProfileService } from '../services/business-profile.service';
+import { 
+  CreateFieldInput, 
+  UpdateFieldInput, 
+  CreatePromotionInput, 
+  UpdatePromotionInput,
+  CreateProductInput,
+  UpdateProductInput,
+  ToggleActiveInput,
+  UpdateBusinessProfileInput 
+} from '../schemas/manager.schema';
 import { discount_type, product_category } from '@prisma/client';
 
 export class ManagerController {
@@ -111,18 +121,7 @@ export class ManagerController {
   static async createField(req: AuthRequest, res: Response) {
     try {
       const ownerId = req.user.id;
-      const { name, address, description, amenities, basePricePerHour } = req.body;
-
-      // Basic validation
-      if (!name || !address || basePricePerHour === undefined) {
-        return res.status(400).json({
-          message: 'Nombre, dirección y precio por hora son obligatorios',
-        });
-      }
-
-      if (basePricePerHour <= 0) {
-        return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
-      }
+      const { name, address, description, amenities, basePricePerHour } = req.body as CreateFieldInput;
 
       const field = await ManagerService.createField(ownerId, {
         name,
@@ -158,12 +157,7 @@ export class ManagerController {
     try {
       const ownerId = req.user.id;
       const fieldId = req.params.id;
-      const { name, address, description, amenities, basePricePerHour } = req.body;
-
-      // Validate price if provided
-      if (basePricePerHour !== undefined && basePricePerHour <= 0) {
-        return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
-      }
+      const { name, address, description, amenities, basePricePerHour } = req.body as UpdateFieldInput;
 
       const field = await ManagerService.updateField(fieldId, ownerId, {
         name,
@@ -297,35 +291,10 @@ export class ManagerController {
     try {
       const ownerId = req.user.id;
       const fieldId = req.params.fieldId;
-      const { title, description, discountType, discountValue, startDate, endDate } = req.body;
-
-      // Validation
-      if (!title || !discountType || discountValue === undefined || !startDate || !endDate) {
-        return res.status(400).json({
-          message: 'Título, tipo de descuento, valor, fecha inicio y fin son obligatorios',
-        });
-      }
-
-      if (!['percentage', 'fixed_amount'].includes(discountType)) {
-        return res.status(400).json({
-          message: 'Tipo de descuento debe ser "percentage" o "fixed_amount"',
-        });
-      }
-
-      if (discountValue <= 0) {
-        return res.status(400).json({ message: 'El valor del descuento debe ser mayor a 0' });
-      }
-
-      if (discountType === 'percentage' && discountValue > 100) {
-        return res.status(400).json({ message: 'El porcentaje no puede ser mayor a 100' });
-      }
+      const { title, description, discountType, discountValue, startDate, endDate } = req.body as CreatePromotionInput;
 
       const start = new Date(startDate);
       const end = new Date(endDate);
-
-      if (end <= start) {
-        return res.status(400).json({ message: 'La fecha de fin debe ser posterior a la de inicio' });
-      }
 
       const promotion = await ManagerService.createPromotion(fieldId, ownerId, {
         title,
@@ -368,23 +337,7 @@ export class ManagerController {
     try {
       const ownerId = req.user.id;
       const promotionId = req.params.id;
-      const { title, description, discountType, discountValue, startDate, endDate, isActive } = req.body;
-
-      // Validate discount type if provided
-      if (discountType && !['percentage', 'fixed_amount'].includes(discountType)) {
-        return res.status(400).json({
-          message: 'Tipo de descuento debe ser "percentage" o "fixed_amount"',
-        });
-      }
-
-      // Validate discount value if provided
-      if (discountValue !== undefined && discountValue <= 0) {
-        return res.status(400).json({ message: 'El valor del descuento debe ser mayor a 0' });
-      }
-
-      if (discountType === 'percentage' && discountValue > 100) {
-        return res.status(400).json({ message: 'El porcentaje no puede ser mayor a 100' });
-      }
+      const { title, description, discountType, discountValue, startDate, endDate, isActive } = req.body as UpdatePromotionInput;
 
       const promotion = await ManagerService.updatePromotion(promotionId, ownerId, {
         title,
@@ -548,25 +501,7 @@ export class ManagerController {
     try {
       const ownerId = req.user.id;
       const fieldId = req.params.fieldId;
-      const { name, description, price, imageUrl, category } = req.body;
-
-      // Validation
-      if (!name || price === undefined || !category) {
-        return res.status(400).json({
-          message: 'Nombre, precio y categoría son obligatorios',
-        });
-      }
-
-      const validCategories: product_category[] = ['bebida', 'snack', 'equipo', 'promocion'];
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({
-          message: 'Categoría debe ser "bebida", "snack", "equipo" o "promocion"',
-        });
-      }
-
-      if (price <= 0) {
-        return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
-      }
+      const { name, description, price, imageUrl, category } = req.body as CreateProductInput;
 
       const product = await ManagerService.createProduct(fieldId, ownerId, {
         name,
@@ -607,22 +542,7 @@ export class ManagerController {
     try {
       const ownerId = req.user.id;
       const productId = req.params.id;
-      const { name, description, price, imageUrl, category, isActive } = req.body;
-
-      // Validate category if provided
-      if (category) {
-        const validCategories: product_category[] = ['bebida', 'snack', 'equipo', 'promocion'];
-        if (!validCategories.includes(category)) {
-          return res.status(400).json({
-            message: 'Categoría debe ser "bebida", "snack", "equipo" o "promocion"',
-          });
-        }
-      }
-
-      // Validate price if provided
-      if (price !== undefined && price <= 0) {
-        return res.status(400).json({ message: 'El precio debe ser mayor a 0' });
-      }
+      const { name, description, price, imageUrl, category, isActive } = req.body as UpdateProductInput;
 
       const product = await ManagerService.updateProduct(productId, ownerId, {
         name,
@@ -686,11 +606,7 @@ export class ManagerController {
     try {
       const ownerId = req.user.id;
       const productId = req.params.id;
-      const { isActive } = req.body;
-
-      if (typeof isActive !== 'boolean') {
-        return res.status(400).json({ message: 'isActive debe ser un valor booleano' });
-      }
+      const { isActive } = req.body as ToggleActiveInput;
 
       const product = await ManagerService.toggleProductActive(productId, ownerId, isActive);
 

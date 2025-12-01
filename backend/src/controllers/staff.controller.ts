@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { StaffService } from '../services/staff.service';
 import { staff_role } from '@prisma/client';
+import { CreateStaffInput, UpdateStaffInput, ToggleActiveInput } from '../schemas/staff.schema';
 
 export class StaffController {
   /**
@@ -70,18 +71,7 @@ export class StaffController {
   static async createStaff(req: AuthRequest, res: Response) {
     try {
       const managerId = req.user.id;
-      const { name, email, phone, role, permissions } = req.body;
-
-      // Validation
-      if (!name || !email) {
-        return res.status(400).json({ message: 'Nombre y email son obligatorios' });
-      }
-
-      // Validate role
-      const validRoles: staff_role[] = ['encargado', 'administrador', 'recepcionista', 'mantenimiento'];
-      if (role && !validRoles.includes(role)) {
-        return res.status(400).json({ message: 'Rol inválido' });
-      }
+      const { name, email, phone, role, permissions } = req.body as CreateStaffInput;
 
       const staff = await StaffService.createStaff(managerId, {
         name,
@@ -118,13 +108,7 @@ export class StaffController {
     try {
       const managerId = req.user.id;
       const staffId = req.params.id;
-      const { name, email, phone, role, permissions, isActive } = req.body;
-
-      // Validate role if provided
-      const validRoles: staff_role[] = ['encargado', 'administrador', 'recepcionista', 'mantenimiento'];
-      if (role && !validRoles.includes(role)) {
-        return res.status(400).json({ message: 'Rol inválido' });
-      }
+      const { name, email, phone, role, permissions, isActive } = req.body as UpdateStaffInput;
 
       const staff = await StaffService.updateStaff(staffId, managerId, {
         name,
@@ -187,11 +171,7 @@ export class StaffController {
     try {
       const managerId = req.user.id;
       const staffId = req.params.id;
-      const { isActive } = req.body;
-
-      if (typeof isActive !== 'boolean') {
-        return res.status(400).json({ message: 'isActive debe ser un booleano' });
-      }
+      const { isActive } = req.body as ToggleActiveInput;
 
       const staff = await StaffService.toggleActive(staffId, managerId, isActive);
 

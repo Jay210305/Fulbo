@@ -8,6 +8,7 @@ export interface FieldDisplay {
   name: string;
   status: 'active' | 'maintenance';
   rating: number;
+  reviewCount?: number;
   capacity: string;
   price: number;
   bookings: number;

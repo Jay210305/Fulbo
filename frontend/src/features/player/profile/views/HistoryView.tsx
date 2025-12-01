@@ -1,25 +1,14 @@
 import { Separator } from "../../../../components/ui/separator";
 import { SectionHeader } from "../components/SectionHeader";
-import { BookingHistory, MatchStats } from "../types";
+import { useBookingHistory, BookingHistoryItem, MatchStats } from "../hooks/useBookingHistory";
 
 interface HistoryViewProps {
   onBack: () => void;
 }
 
-// Mock data - would come from API
-const MOCK_BOOKINGS: BookingHistory[] = [
-  { field: 'Canchita La Merced', date: '8 Oct 2024', price: 35 },
-  { field: 'Estadio Zona Sur', date: '1 Oct 2024', price: 45 },
-  { field: 'Cancha Los Pinos', date: '25 Sep 2024', price: 40 }
-];
-
-const MOCK_STATS: MatchStats = {
-  total: 24,
-  won: 15,
-  lost: 9
-};
-
 export function HistoryView({ onBack }: HistoryViewProps) {
+  const { bookings, stats, loading, error } = useBookingHistory();
+
   return (
     <div className="min-h-screen bg-white pb-20">
       <SectionHeader title="Historial" onBack={onBack} />
@@ -28,11 +17,23 @@ export function HistoryView({ onBack }: HistoryViewProps) {
         {/* Booking History */}
         <div>
           <h3 className="mb-3">Reservas Anteriores</h3>
-          <div className="space-y-3">
-            {MOCK_BOOKINGS.map((booking, index) => (
-              <BookingCard key={index} booking={booking} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#047857]"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">{error}</div>
+          ) : bookings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No tienes reservas anteriores
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bookings.map((booking) => (
+                <BookingCard key={booking.id} booking={booking} />
+              ))}
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -40,21 +41,39 @@ export function HistoryView({ onBack }: HistoryViewProps) {
         {/* Match Stats */}
         <div>
           <h3 className="mb-3">Historial de Partidos</h3>
-          <MatchStatsGrid stats={MOCK_STATS} />
+          <MatchStatsGrid stats={stats} />
         </div>
       </div>
     </div>
   );
 }
 
-function BookingCard({ booking }: { booking: BookingHistory }) {
+function BookingCard({ booking }: { booking: BookingHistoryItem }) {
+  const statusColors = {
+    confirmed: 'bg-green-100 text-green-800',
+    pending: 'bg-yellow-100 text-yellow-800',
+    cancelled: 'bg-red-100 text-red-800'
+  };
+
+  const statusLabels = {
+    confirmed: 'Confirmada',
+    pending: 'Pendiente',
+    cancelled: 'Cancelada'
+  };
+
   return (
     <div className="border border-border rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <h4>{booking.field}</h4>
         <span className="text-[#047857]">S/ {booking.price}</span>
       </div>
-      <p className="text-sm text-muted-foreground">{booking.date}</p>
+      <p className="text-sm text-muted-foreground">{booking.address}</p>
+      <div className="flex items-center justify-between mt-2">
+        <p className="text-sm text-muted-foreground">{booking.date} • {booking.time}</p>
+        <span className={`text-xs px-2 py-1 rounded-full ${statusColors[booking.status]}`}>
+          {statusLabels[booking.status]}
+        </span>
+      </div>
     </div>
   );
 }

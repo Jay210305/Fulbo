@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import prisma from '../config/prisma';
+import { UpdateProfileInput, VerifyPhoneInput } from '../schemas/user.schema';
 
 export class UserController {
   
@@ -34,14 +35,13 @@ export class UserController {
   static async updateProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.id;
-      const { firstName, lastName } = req.body;
+      const { firstName, lastName } = req.body as UpdateProfileInput;
 
       const updatedUser = await prisma.users.update({
         where: { user_id: userId },
         data: {
           first_name: firstName,
           last_name: lastName,
-          // El teléfono se actualiza por verifyPhone
         },
         select: {
           user_id: true,
@@ -63,7 +63,7 @@ export class UserController {
   static async verifyPhone(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.id;
-      const { phone, code } = req.body;
+      const { phone, code } = req.body as VerifyPhoneInput;
 
       // Simulación de validación de código (en producción usar Twilio/SNS)
       if (code !== '123456') { 
@@ -88,8 +88,6 @@ export class UserController {
     try {
       const userId = req.user.id;
       
-      // Aquí podrías recibir datos del negocio (RUC, Dirección) y guardarlos
-      // Por ahora, solo actualizamos el rol
       const updatedUser = await prisma.users.update({
         where: { user_id: userId },
         data: { role: 'manager' },

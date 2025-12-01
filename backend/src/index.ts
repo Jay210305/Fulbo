@@ -15,6 +15,7 @@ import { bookingSocketHandler } from './sockets/booking.socket';
 import fieldRoutes from './routes/field.routes';
 import bookingRoutes from './routes/booking.routes';
 import managerRoutes from './routes/manager.routes';
+import reviewRoutes from './routes/review.routes';
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use('/api/fields', fieldRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/manager', managerRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({

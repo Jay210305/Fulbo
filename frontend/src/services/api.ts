@@ -354,5 +354,90 @@ export const PromotionApi = {
     ),
 };
 
+// ==================== BOOKING API (Player) ====================
+
+export interface PlayerBooking {
+  booking_id: string;
+  player_id: string;
+  field_id: string;
+  start_time: string;
+  end_time: string;
+  total_price: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  fields: {
+    field_id: string;
+    name: string;
+    address: string;
+    owner_id: string;
+  };
+}
+
+export interface FieldBooking {
+  booking_id: string;
+  player_id: string;
+  field_id: string;
+  start_time: string;
+  end_time: string;
+  total_price: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  users: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_number: string | null;
+  };
+}
+
+export interface CreateBookingDto {
+  fieldId: string;
+  startTime: string;
+  endTime: string;
+  totalPrice: number;
+  paymentMethod?: string;
+  matchName?: string;
+}
+
+export const BookingApi = {
+  /**
+   * Get all bookings for the current user (player history)
+   */
+  getUserBookings: () =>
+    api.get<PlayerBooking[]>('/bookings/user'),
+
+  /**
+   * Get bookings for a specific field with optional date filtering
+   */
+  getFieldBookings: (fieldId: string, filters?: { from?: string; to?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.from) params.append('from', filters.from);
+    if (filters?.to) params.append('to', filters.to);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get<FieldBooking[]>(`/bookings/field/${fieldId}${query}`);
+  },
+
+  /**
+   * Get a specific booking by ID
+   */
+  getById: (bookingId: string) =>
+    api.get<PlayerBooking>(`/bookings/${bookingId}`),
+
+  /**
+   * Create a new booking
+   */
+  create: (data: CreateBookingDto) =>
+    api.post<PlayerBooking>('/bookings', data),
+
+  /**
+   * Cancel a booking
+   */
+  cancel: (bookingId: string) =>
+    api.patch<{ message: string; booking: PlayerBooking }>(`/bookings/${bookingId}/cancel`),
+};
+
 export { ApiError };
 export default api;

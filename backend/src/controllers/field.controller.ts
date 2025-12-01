@@ -1,24 +1,22 @@
 import { Request, Response } from 'express';
 import { FieldService } from '../services/field.service';
+import { SearchQueryInput, AvailabilityQueryInput } from '../schemas/field.schema';
 
 export class FieldController {
   static async getFields(req: Request, res: Response) {
     try {
-      const { lat, lng } = req.query;
+      const { lat, lng } = req.query as unknown as SearchQueryInput;
 
       // Si recibimos lat/lng, buscamos por cercanía
-      if (lat && lng) {
-        const latitude = parseFloat(lat as string);
-        const longitude = parseFloat(lng as string);
-
-        const nearbyFields = await FieldService.getNearbyFields(latitude, longitude);
+      if (lat !== undefined && lng !== undefined) {
+        const nearbyFields = await FieldService.getNearbyFields(lat, lng);
 
         // Mapeo para el frontend
         const response = nearbyFields.map((f: any) => ({
             id: f.field_id,
             name: f.name,
             location: f.address,
-            distance: `${(f.distance_meters / 1000).toFixed(1)} km`, // Agregamos distancia
+            distance: `${(f.distance_meters / 1000).toFixed(1)} km`,
             price: Number(f.base_price_per_hour),
             image: f.image,
             available: 5, // Mock
@@ -28,20 +26,17 @@ export class FieldController {
         }));
 
         res.json(response);
-        return; // Importante terminar aquí
+        return;
       }
 
       const fields = await FieldService.getAllFields();
       
-      // Mapeamos los datos para que coincidan con lo que espera el Frontend
-      // El frontend espera 'price', 'image', etc.
       const formattedFields = fields.map(f => ({
         id: f.field_id,
         name: f.name,
-        location: f.address, // Mapeamos address a location
+        location: f.address,
         price: Number(f.base_price_per_hour),
-        image: f.field_photos[0]?.image_url || 'https://via.placeholder.com/400', // Fallback
-        // Datos mockeados que calcularemos en Fase 2
+        image: f.field_photos[0]?.image_url || 'https://via.placeholder.com/400',
         available: 5, 
         total: 10,
         type: '5v5', 
@@ -73,25 +68,11 @@ export class FieldController {
   /**
    * GET /api/fields/:id/availability
    * Get availability for a field within a date range
-   * Query params: startDate, endDate (ISO strings)
    */
   static async getFieldAvailability(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { startDate, endDate } = req.query;
-
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          message: 'startDate y endDate son requeridos' 
-        });
-      }
-
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return res.status(400).json({ message: 'Formato de fecha inválido' });
-      }
+      const { startDate, endDate } = req.query as unknown as AvailabilityQueryInput;
 
       // Verify field exists
       const field = await FieldService.getFieldById(id);
@@ -99,7 +80,7 @@ export class FieldController {
         return res.status(404).json({ message: 'Cancha no encontrada' });
       }
 
-      const availability = await FieldService.getFieldAvailability(id, start, end);
+      const availability = await FieldService.getFieldAvailability(id, startDate, endDate);
 
       // Combine bookings and blocks into unavailable slots
       const unavailableSlots = [
@@ -122,8 +103,8 @@ export class FieldController {
       res.json({
         fieldId: id,
         fieldName: field.name,
-        startDate: start,
-        endDate: end,
+        startDate,
+        endDate,
         unavailableSlots,
       });
     } catch (error) {
