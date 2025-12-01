@@ -327,7 +327,7 @@ export class BookingService {
     const owner = field.users;
 
     // Verificar si el que cancela es el player o el owner
-    const isPlayerCancelling = cancelledByUserId === player.user_id;
+    const isPlayerCancelling = player && cancelledByUserId === player.user_id;
     const isOwnerCancelling = cancelledByUserId === owner.user_id;
 
     if (!isPlayerCancelling && !isOwnerCancelling) {
@@ -335,7 +335,7 @@ export class BookingService {
     }
 
     const cancelledByRole: 'player' | 'owner' = isPlayerCancelling ? 'player' : 'owner';
-    const cancelledByName = isPlayerCancelling 
+    const cancelledByName = isPlayerCancelling && player
       ? `${player.first_name} ${player.last_name}` 
       : `${owner.first_name} ${owner.last_name}`;
 
@@ -351,41 +351,45 @@ export class BookingService {
     // 3. Notificar a la contraparte por email
     try {
       // Si cancela el player, notificar al owner y viceversa
-      const recipientEmail = isPlayerCancelling ? owner.email : player.email;
-      const recipientName = isPlayerCancelling 
-        ? `${owner.first_name} ${owner.last_name}` 
-        : `${player.first_name} ${player.last_name}`;
+      if (player) {
+        const recipientEmail = isPlayerCancelling ? owner.email : player.email;
+        const recipientName = isPlayerCancelling 
+          ? `${owner.first_name} ${owner.last_name}` 
+          : `${player.first_name} ${player.last_name}`;
 
-      await EmailService.sendCancellationNotification({
-        recipientEmail,
-        recipientName,
-        cancelledByRole,
-        cancelledByName,
-        fieldName: field.name,
-        startTime: booking.start_time,
-        endTime: booking.end_time,
-        bookingId: booking.booking_id
-      });
+        await EmailService.sendCancellationNotification({
+          recipientEmail,
+          recipientName,
+          cancelledByRole,
+          cancelledByName,
+          fieldName: field.name,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          bookingId: booking.booking_id
+        });
+      }
     } catch (error) {
       console.error("⚠️ Error enviando email de cancelación:", error);
     }
 
     // 4. Emitir evento Socket.io para actualización en tiempo real
-    emitBookingCancelled(
-      owner.user_id,
-      player.user_id,
-      {
-        booking_id: booking.booking_id,
-        field: {
-          field_id: field.field_id,
-          name: field.name
+    if (player) {
+      emitBookingCancelled(
+        owner.user_id,
+        player.user_id,
+        {
+          booking_id: booking.booking_id,
+          field: {
+            field_id: field.field_id,
+            name: field.name
+          },
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          status: 'cancelled'
         },
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        status: 'cancelled'
-      },
-      cancelledByRole
-    );
+        cancelledByRole
+      );
+    }
 
     return updatedBooking;
   }
@@ -510,7 +514,7 @@ export class BookingService {
     const owner = field.users;
 
     // Validation 1: Permissions - user must be player or owner
-    const isPlayer = userId === player.user_id;
+    const isPlayer = player && userId === player.user_id;
     const isOwner = userId === owner.user_id;
 
     if (!isPlayer && !isOwner) {
@@ -577,31 +581,63 @@ export class BookingService {
 
     // Send reschedule notification (non-blocking)
     const rescheduledByRole: 'player' | 'owner' = isPlayer ? 'player' : 'owner';
-    const rescheduledByName = isPlayer
+    const rescheduledByName = isPlayer && player
       ? `${player.first_name} ${player.last_name}`
       : `${owner.first_name} ${owner.last_name}`;
 
     // Notify the other party
-    const recipientEmail = isPlayer ? owner.email : player.email;
-    const recipientName = isPlayer
-      ? `${owner.first_name} ${owner.last_name}`
-      : `${player.first_name} ${player.last_name}`;
+    if (player) {
+      const recipientEmail = isPlayer ? owner.email : player.email;
+      const recipientName = isPlayer
+        ? `${owner.first_name} ${owner.last_name}`
+        : `${player.first_name} ${player.last_name}`;
 
-    EmailService.sendRescheduleNotification({
-      recipientEmail,
-      recipientName,
-      rescheduledByRole,
-      rescheduledByName,
-      fieldName: field.name,
-      oldStartTime,
-      oldEndTime,
-      newStartTime: newStart,
-      newEndTime: newEnd,
-      bookingId: booking.booking_id,
-    }).catch((err) => console.error('⚠️ Error enviando email de reprogramación:', err));
+      EmailService.sendRescheduleNotification({
+        recipientEmail,
+        recipientName,
+        rescheduledByRole,
+        rescheduledByName,
+        fieldName: field.name,
+        oldStartTime,
+        oldEndTime,
+        newStartTime: newStart,
+        newEndTime: newEnd,
+        bookingId: booking.booking_id,
+      }).catch((err) => console.error('⚠️ Error enviando email de reprogramación:', err));
+    }
 
     console.log(`✅ Reserva ${bookingId} reprogramada por ${rescheduledByRole}: ${oldStartTime.toISOString()} -> ${newStart.toISOString()}`);
 
     return updatedBooking;
+  }
+
+  /**
+   * Cancel expired pending bookings that have been waiting for payment for more than 15 minutes.
+   * This is called by the scheduled cleanup job to free up blocked slots.
+   */
+  static async cancelExpiredBookings(): Promise<number> {
+    // Calculate the cut-off time: 15 minutes ago
+    const threshold = new Date(Date.now() - 15 * 60 * 1000);
+
+    // Find and update all expired pending bookings
+    const result = await prisma.bookings.updateMany({
+      where: {
+        status: 'pending',
+        created_at: {
+          lt: threshold
+        }
+      },
+      data: {
+        status: 'cancelled'
+      }
+    });
+
+    const cancelledCount = result.count;
+
+    if (cancelledCount > 0) {
+      console.log(`🧹 Cleaned up ${cancelledCount} expired booking(s)`);
+    }
+
+    return cancelledCount;
   }
 }

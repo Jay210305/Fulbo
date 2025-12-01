@@ -453,4 +453,78 @@ export class EmailService {
       console.error('❌ Error enviando email de reprogramación:', error);
     }
   }
+
+  /**
+   * Send password reset email
+   */
+  static async sendPasswordResetEmail(email: string, userName: string, resetUrl: string): Promise<void> {
+    const mailOptions = {
+      from: `"Fulbo ⚽" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🔐 Restablecer tu contraseña - Fulbo',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .button { display: inline-block; background: #4F46E5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+            .button:hover { background: #4338CA; }
+            .warning { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .footer { padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+            .emoji { font-size: 48px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="emoji">🔐</div>
+              <h1>Restablecer Contraseña</h1>
+            </div>
+            <div class="content">
+              <p>Hola <strong>${userName}</strong>,</p>
+              <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Fulbo.</p>
+              
+              <p style="text-align: center;">
+                <a href="${resetUrl}" class="button">Restablecer mi contraseña</a>
+              </p>
+              
+              <div class="warning">
+                <strong>⚠️ Importante:</strong>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                  <li>Este enlace expira en <strong>1 hora</strong></li>
+                  <li>Si no solicitaste este cambio, ignora este email</li>
+                  <li>Tu contraseña actual sigue siendo válida</li>
+                </ul>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px;">
+                Si el botón no funciona, copia y pega este enlace en tu navegador:
+                <br>
+                <a href="${resetUrl}" style="word-break: break-all; color: #4F46E5;">${resetUrl}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>Este es un email automático de Fulbo. Por favor no responder.</p>
+              <p>Si no solicitaste este email, puedes ignorarlo con seguridad.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`📧 Email de reset de contraseña enviado a: ${email}`);
+    } catch (error) {
+      console.error('❌ Error enviando email de reset:', error);
+      throw error;
+    }
+  }
 }

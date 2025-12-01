@@ -213,8 +213,8 @@ export class ScheduleBlockService {
           bookingId: b.booking_id,
           startTime: b.start_time,
           endTime: b.end_time,
-          customerName: `${b.users.first_name} ${b.users.last_name}`,
-          customerEmail: b.users.email,
+          customerName: b.users ? `${b.users.first_name} ${b.users.last_name}` : 'Invitado',
+          customerEmail: b.users?.email || 'N/A',
         })),
       };
     }

@@ -82,3 +82,57 @@ export const socialLoginSchema = z.object({
 });
 
 export type SocialLoginInput = z.infer<typeof socialLoginSchema>;
+
+// ==================== REFRESH TOKEN ====================
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z
+    .string({ error: 'El refresh token es obligatorio' })
+    .min(1, 'El refresh token es obligatorio'),
+});
+
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+
+// ==================== FORGOT PASSWORD ====================
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ error: 'El email es obligatorio' })
+    .email('El email no tiene un formato válido'),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+// ==================== RESET PASSWORD ====================
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string({ error: 'El token es obligatorio' })
+    .min(1, 'El token es obligatorio'),
+  password: z
+    .string({ error: 'La contraseña es obligatoria' })
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'La contraseña debe contener al menos una mayúscula, una minúscula y un número'
+    ),
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+// ==================== CHANGE PASSWORD ====================
+
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string({ error: 'La contraseña actual es obligatoria' })
+    .min(1, 'La contraseña actual es obligatoria'),
+  newPassword: z
+    .string({ error: 'La nueva contraseña es obligatoria' })
+    .min(8, 'La nueva contraseña debe tener al menos 8 caracteres')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'La nueva contraseña debe contener al menos una mayúscula, una minúscula y un número'
+    ),
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

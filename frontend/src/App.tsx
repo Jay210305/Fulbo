@@ -177,6 +177,18 @@ export default function App() {
     const checkSession = () => {
       const token = localStorage.getItem('token');
       if (token) {
+        // Verificar si el usuario es manager desde localStorage
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            const userData = JSON.parse(savedUser);
+            if (userData.role === 'manager') {
+              setIsOwner(true);
+            }
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
         // Si hay token, saltamos directo a autenticado
         setAuthState('authenticated');
       } else {
@@ -196,8 +208,33 @@ export default function App() {
   }, [authState]);
 
   const handleSwitchMode = () => {
-    if (isOwner) {
-      setCurrentMode(currentMode === 'player' ? 'manager' : 'player');
+    console.log('handleSwitchMode called');
+    console.log('Current isOwner:', isOwner);
+    console.log('Current currentMode:', currentMode);
+    
+    // Allow switching if user is owner (state) or if role in localStorage is manager
+    const savedUser = localStorage.getItem('user');
+    let isManagerFromStorage = false;
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        isManagerFromStorage = userData.role === 'manager';
+        console.log('isManagerFromStorage:', isManagerFromStorage);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
+    
+    if (isOwner || isManagerFromStorage) {
+      const newMode = currentMode === 'player' ? 'manager' : 'player';
+      console.log('Switching to mode:', newMode);
+      setCurrentMode(newMode);
+      // Also update isOwner state if it wasn't set
+      if (!isOwner && isManagerFromStorage) {
+        setIsOwner(true);
+      }
+    } else {
+      console.log('Switch mode blocked - not owner or manager');
     }
   }
   
@@ -269,28 +306,30 @@ export default function App() {
 
   // Main App - Manager Mode
   return (
-    <div className="min-h-screen bg-white">
-      {managerTab === 'dashboard' && (
-        <ManagerDashboard
-          onNavigateToSchedule={() => setManagerTab('schedule')}
-          onNavigateToFields={() => setManagerTab('fields')}
+    <UserProvider>
+      <div className="min-h-screen bg-white">
+        {managerTab === 'dashboard' && (
+          <ManagerDashboard
+            onNavigateToSchedule={() => setManagerTab('schedule')}
+            onNavigateToFields={() => setManagerTab('fields')}
+          />
+        )}
+        {managerTab === 'fields' && <FieldManagement />}
+        {managerTab === 'schedule' && <ScheduleManagement />}
+        {managerTab === 'advertising' && <AdvertisingScreen />}
+        {managerTab === 'profile' && (
+          <ManagerProfile
+            isOwner={isOwner}
+            currentMode={currentMode}
+            onSwitchMode={handleSwitchMode}
+          />
+        )}
+        <BottomNav
+          activeTab={managerTab}
+          onTabChange={setManagerTab}
+          type="manager"
         />
-      )}
-      {managerTab === 'fields' && <FieldManagement />}
-      {managerTab === 'schedule' && <ScheduleManagement />}
-      {managerTab === 'advertising' && <AdvertisingScreen />}
-      {managerTab === 'profile' && (
-        <ManagerProfile
-          isOwner={isOwner}
-          currentMode={currentMode}
-          onSwitchMode={handleSwitchMode}
-        />
-      )}
-      <BottomNav
-        activeTab={managerTab}
-        onTabChange={setManagerTab}
-        type="manager"
-      />
-    </div>
+      </div>
+    </UserProvider>
   );
 }

@@ -37,6 +37,7 @@ export interface NewFieldForm {
   peakHourPrice: string;
   amenities: string[];
   description: string;
+  images: string[];
 }
 
 export interface EditPriceForm {
