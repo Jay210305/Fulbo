@@ -1,7 +1,7 @@
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import { Textarea } from "../../../../components/ui/textarea";
-import { ImageWithFallback } from "../../../../components/figma/ImageWithFallback";
+import { ImageUpload } from "../../../../components/shared/ImageUpload";
 import type { ProductForm, ProductCategory } from "../types";
 
 interface ProductFormFieldsProps {
@@ -64,24 +64,15 @@ export function ProductFormFields({ product, onChange }: ProductFormFieldsProps)
       </div>
 
       <div>
-        <Label htmlFor="productImageUrl">URL de Imagen</Label>
-        <Input
-          id="productImageUrl"
-          type="url"
-          placeholder="https://ejemplo.com/imagen.jpg"
-          className="h-12"
-          value={product.imageUrl}
-          onChange={(e) => onChange({ ...product, imageUrl: e.target.value })}
-        />
-        {product.imageUrl && (
-          <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden bg-muted">
-            <ImageWithFallback
-              src={product.imageUrl}
-              alt="Preview"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        <Label>Imagen del Producto</Label>
+        <div className="mt-2">
+          <ImageUpload
+            value={product.imageUrl}
+            onChange={(url) => onChange({ ...product, imageUrl: url })}
+            folder="products"
+            placeholder="Sube una imagen del producto"
+          />
+        </div>
       </div>
     </div>
   );

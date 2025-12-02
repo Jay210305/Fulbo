@@ -15,6 +15,7 @@ export interface ProfileData {
   position: string;
   level: string;
   bio: string;
+  avatar?: string;
 }
 
 export interface NotificationSettings {

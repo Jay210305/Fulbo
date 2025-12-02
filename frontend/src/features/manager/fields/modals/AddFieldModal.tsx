@@ -1,4 +1,4 @@
-import { X, ChevronLeft, ChevronRight, Upload, Check, Loader2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../../components/ui/select";
+import { ImageUpload } from "../../../../components/shared/ImageUpload";
 import { NewFieldForm } from "../types";
 import { AMENITY_LIST } from "../components/AmenitiesList";
 
@@ -284,6 +285,22 @@ function Step3Services({
   setNewField: React.Dispatch<React.SetStateAction<NewFieldForm>>;
   toggleAmenity: (amenity: string) => void;
 }) {
+  const handleImageUpload = (url: string) => {
+    if (url) {
+      setNewField(prev => ({
+        ...prev,
+        images: [...(prev.images || []), url].slice(0, 5) // Max 5 images
+      }));
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setNewField(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, index) => index !== indexToRemove)
+    }));
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -323,11 +340,37 @@ function Step3Services({
         <p className="text-sm text-muted-foreground mb-2">
           Sube imágenes de la cancha (máximo 5)
         </p>
-        <div className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-[#047857] transition-colors">
-          <Upload size={32} className="mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Haz clic para subir imágenes</p>
-          <p className="text-xs text-muted-foreground mt-1">PNG, JPG - Máximo 2MB cada una</p>
-        </div>
+        
+        {/* Show uploaded images */}
+        {newField.images && newField.images.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {newField.images.map((url, index) => (
+              <div key={index} className="relative rounded-lg overflow-hidden aspect-square">
+                <img 
+                  src={url} 
+                  alt={`Imagen ${index + 1}`} 
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Upload component - only show if less than 5 images */}
+        {(!newField.images || newField.images.length < 5) && (
+          <ImageUpload
+            onChange={handleImageUpload}
+            folder="fields"
+            placeholder="Haz clic o arrastra una imagen"
+          />
+        )}
       </div>
 
       <div>
@@ -374,8 +417,23 @@ function Step4Review({ newField }: { newField: NewFieldForm }) {
             <span className="text-muted-foreground">Servicios:</span>
             <span>{newField.amenities.length} seleccionados</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Imágenes:</span>
+            <span>{newField.images?.length || 0} subidas</span>
+          </div>
         </div>
       </div>
+
+      {/* Preview first image if available */}
+      {newField.images && newField.images.length > 0 && (
+        <div className="rounded-lg overflow-hidden">
+          <img 
+            src={newField.images[0]} 
+            alt="Vista previa" 
+            className="w-full h-32 object-cover"
+          />
+        </div>
+      )}
 
       <div className="bg-[#dcfce7] border border-[#047857] rounded-lg p-4">
         <div className="flex items-start gap-3">

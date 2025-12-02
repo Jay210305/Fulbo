@@ -39,6 +39,8 @@ export interface Field {
   price: number;
   type: '5v5' | '7v7' | '11v11';
   rating: number;
+  reviewCount?: number;
+  popularTags?: string[];
   hasFullVaso: boolean;
   fullVasoPromo?: string;
   amenities: string[];

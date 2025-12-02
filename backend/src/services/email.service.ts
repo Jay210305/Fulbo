@@ -25,6 +25,19 @@ interface CancellationEmailData {
   bookingId: string;
 }
 
+interface RescheduleEmailData {
+  recipientEmail: string;
+  recipientName: string;
+  rescheduledByRole: 'player' | 'owner';
+  rescheduledByName: string;
+  fieldName: string;
+  oldStartTime: Date;
+  oldEndTime: Date;
+  newStartTime: Date;
+  newEndTime: Date;
+  bookingId: string;
+}
+
 // Nodemailer transporter configuration
 // Uses Gmail SMTP for testing - configure with App Password
 const createTransporter = () => {
@@ -335,5 +348,183 @@ export class EmailService {
       this.sendBookingConfirmationToPlayer(data),
       this.sendNewReservationToOwner(data)
     ]);
+  }
+
+  /**
+   * Send reschedule notification email
+   */
+  static async sendRescheduleNotification(data: RescheduleEmailData): Promise<void> {
+    const { 
+      recipientEmail, 
+      recipientName, 
+      rescheduledByRole, 
+      rescheduledByName, 
+      fieldName, 
+      oldStartTime, 
+      oldEndTime, 
+      newStartTime, 
+      newEndTime, 
+      bookingId 
+    } = data;
+
+    const rescheduledByText = rescheduledByRole === 'player' ? 'el jugador' : 'el propietario';
+
+    const mailOptions = {
+      from: `"Fulbo ⚽" <${process.env.EMAIL_USER}>`,
+      to: recipientEmail,
+      subject: '📅 Reserva reprogramada',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .booking-card { background: #fffbeb; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #fcd34d; }
+            .booking-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #fcd34d; }
+            .booking-row:last-child { border-bottom: none; }
+            .label { color: #6b7280; font-size: 14px; }
+            .value { color: #111827; font-weight: 600; }
+            .old-value { color: #9ca3af; text-decoration: line-through; font-size: 12px; }
+            .new-value { color: #059669; font-weight: 600; }
+            .footer { padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+            .emoji { font-size: 48px; }
+            .change-arrow { color: #F59E0B; font-weight: bold; margin: 0 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="emoji">📅</div>
+              <h1>Reserva Reprogramada</h1>
+            </div>
+            <div class="content">
+              <p>Hola <strong>${recipientName}</strong>,</p>
+              <p>Te informamos que la siguiente reserva ha sido reprogramada por ${rescheduledByText} <strong>${rescheduledByName}</strong>.</p>
+              
+              <div class="booking-card">
+                <div class="booking-row">
+                  <span class="label">⚽ Cancha</span>
+                  <span class="value">${fieldName}</span>
+                </div>
+                <div class="booking-row">
+                  <span class="label">📅 Fecha anterior</span>
+                  <span class="old-value">${formatDateTime(oldStartTime)}</span>
+                </div>
+                <div class="booking-row">
+                  <span class="label">📅 Nueva fecha</span>
+                  <span class="new-value">${formatDateTime(newStartTime)}</span>
+                </div>
+                <div class="booking-row">
+                  <span class="label">⏰ Horario anterior</span>
+                  <span class="old-value">${formatTime(oldStartTime)} - ${formatTime(oldEndTime)}</span>
+                </div>
+                <div class="booking-row">
+                  <span class="label">⏰ Nuevo horario</span>
+                  <span class="new-value">${formatTime(newStartTime)} - ${formatTime(newEndTime)}</span>
+                </div>
+                <div class="booking-row">
+                  <span class="label">🔖 Código</span>
+                  <span class="value">${bookingId.slice(0, 8).toUpperCase()}</span>
+                </div>
+              </div>
+              
+              <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">
+                Si tienes alguna consulta sobre este cambio, puedes comunicarte a través de la app de Fulbo.
+              </p>
+            </div>
+            <div class="footer">
+              <p>Este es un email automático de Fulbo. Por favor no responder.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`📧 Email de reprogramación enviado a: ${recipientEmail}`);
+    } catch (error) {
+      console.error('❌ Error enviando email de reprogramación:', error);
+    }
+  }
+
+  /**
+   * Send password reset email
+   */
+  static async sendPasswordResetEmail(email: string, userName: string, resetUrl: string): Promise<void> {
+    const mailOptions = {
+      from: `"Fulbo ⚽" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🔐 Restablecer tu contraseña - Fulbo',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .button { display: inline-block; background: #4F46E5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+            .button:hover { background: #4338CA; }
+            .warning { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .footer { padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+            .emoji { font-size: 48px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="emoji">🔐</div>
+              <h1>Restablecer Contraseña</h1>
+            </div>
+            <div class="content">
+              <p>Hola <strong>${userName}</strong>,</p>
+              <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Fulbo.</p>
+              
+              <p style="text-align: center;">
+                <a href="${resetUrl}" class="button">Restablecer mi contraseña</a>
+              </p>
+              
+              <div class="warning">
+                <strong>⚠️ Importante:</strong>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                  <li>Este enlace expira en <strong>1 hora</strong></li>
+                  <li>Si no solicitaste este cambio, ignora este email</li>
+                  <li>Tu contraseña actual sigue siendo válida</li>
+                </ul>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px;">
+                Si el botón no funciona, copia y pega este enlace en tu navegador:
+                <br>
+                <a href="${resetUrl}" style="word-break: break-all; color: #4F46E5;">${resetUrl}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>Este es un email automático de Fulbo. Por favor no responder.</p>
+              <p>Si no solicitaste este email, puedes ignorarlo con seguridad.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`📧 Email de reset de contraseña enviado a: ${email}`);
+    } catch (error) {
+      console.error('❌ Error enviando email de reset:', error);
+      throw error;
+    }
   }
 }

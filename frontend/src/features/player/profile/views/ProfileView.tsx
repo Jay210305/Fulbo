@@ -1,5 +1,6 @@
-import { Camera, Phone, ShieldCheck } from "lucide-react";
-import { Avatar, AvatarFallback } from "../../../../components/ui/avatar";
+import { useState, useRef } from "react";
+import { Camera, Phone, ShieldCheck, Loader2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import { Button } from "../../../../components/ui/button";
@@ -13,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../../components/ui/select";
+import { toast } from "sonner";
+import { uploadImage } from "../../../../services/upload.api";
 import { SectionHeader } from "../components/SectionHeader";
 import { ProfileData, POSITION_OPTIONS, LEVEL_OPTIONS } from "../types";
 
@@ -35,9 +38,48 @@ export function ProfileView({
   phoneVerified,
   onOpenPhoneModal
 }: ProfileViewProps) {
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSave = () => {
     onSaveProfile();
     alert('Cambios guardados');
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Solo se permiten imágenes (JPEG, PNG, WebP)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('La imagen debe ser menor a 5MB');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const url = await uploadImage(file, 'avatars');
+      onUpdateProfile({ avatar: url });
+      toast.success('Foto de perfil actualizada');
+    } catch (error) {
+      toast.error('Error al subir la imagen');
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset input
+      e.target.value = '';
+    }
   };
 
   return (
@@ -49,15 +91,35 @@ export function ProfileView({
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <Avatar className="w-24 h-24">
+              {profile.avatar ? (
+                <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
+              ) : null}
               <AvatarFallback className="bg-[#047857] text-white text-3xl">
                 {profile.name.charAt(0) || 'U'}
               </AvatarFallback>
             </Avatar>
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#047857] text-white rounded-full flex items-center justify-center hover:bg-[#047857]/90">
-              <Camera size={16} />
+            <button 
+              onClick={handleAvatarClick}
+              disabled={isUploadingAvatar}
+              className="absolute bottom-0 right-0 w-8 h-8 bg-[#047857] text-white rounded-full flex items-center justify-center hover:bg-[#047857]/90 disabled:opacity-50"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Camera size={16} />
+              )}
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
           </div>
-          <p className="text-sm text-muted-foreground">Toca para cambiar foto</p>
+          <p className="text-sm text-muted-foreground">
+            {isUploadingAvatar ? 'Subiendo...' : 'Toca para cambiar foto'}
+          </p>
         </div>
 
         {/* Nombre */}

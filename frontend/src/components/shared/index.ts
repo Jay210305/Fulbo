@@ -21,3 +21,6 @@ export { Card, CardHeader, CardContent, CardFooter, CardIcon } from './Card';
 
 // Dialogs
 export { ConfirmDialog, DeleteDialog, DeactivateDialog } from './ConfirmDialog';
+
+// Image Upload
+export { ImageUpload } from './ImageUpload';

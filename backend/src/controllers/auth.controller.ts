@@ -1,10 +1,13 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
+import { RegisterInput, LoginInput, SocialLoginInput } from '../schemas/auth.schema';
+import { AuthRequest } from '../middlewares/auth.middleware';
+import { AppError } from '../utils/AppError';
 
 export class AuthController {
   
-  // --- MÉTODO DE REGISTRO (Ya lo tenías) ---
-  static async register(req: Request, res: Response) {
+  // --- MÉTODO DE REGISTRO ---
+  static async register(req: Request, res: Response, next: NextFunction) {
     try {
       const { 
         email, 
@@ -16,18 +19,9 @@ export class AuthController {
         documentNumber,
         city, 
         district 
-      } = req.body;
+      } = req.body as RegisterInput;
 
-      // Validaciones básicas
-      if (!email || !password || !firstName || !lastName) {
-         res.status(400).json({ 
-           error: 'Faltan campos obligatorios. Se requiere: email, password, firstName, lastName' 
-         });
-         return;
-      }
-
-      // Llamamos al servicio
-      const user = await AuthService.registerUser({
+      const result = await AuthService.registerUser({
         email,
         password,
         firstName,
@@ -40,72 +34,56 @@ export class AuthController {
       });
 
       res.status(201).json({
+        success: true,
         message: 'Usuario registrado exitosamente',
-        user,
+        // Include both 'token' (legacy) and 'accessToken' (new) for backward compatibility
+        token: result.accessToken,
+        user: result.user,
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+        },
       });
 
-    } catch (error: any) {
-      console.error("Error en registro:", error);
-      const status = error.message === 'El email ya está registrado' ? 409 : 500;
-      res.status(status).json({ error: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 
-  // --- NUEVO MÉTODO: LOGIN (FUSIONADO) ---
-  static async login(req: Request, res: Response) {
+  // --- MÉTODO: LOGIN ---
+  static async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
+      const { email, password } = req.body as LoginInput;
 
-      // 1. Validaciones básicas de entrada
-      if (!email || !password) {
-        res.status(400).json({ message: 'Email y contraseña son obligatorios' });
-        return;
-      }
+      const result = await AuthService.loginUser(email, password);
 
-      // 2. Llamada a la Capa de Servicio (Usando el método estático)
-      const data = await AuthService.loginUser(email, password);
-
-      // 3. Respuesta estandarizada
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Login exitoso',
-        token: data.token,
-        user: data.user,
+        // Include both 'token' (legacy) and 'accessToken' (new) for backward compatibility
+        token: result.accessToken,
+        user: result.user,
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+        },
       });
 
-    } catch (error: any) {
-      // Manejo de errores (Credenciales inválidas, usuario no existe, etc.)
-      // Usamos 401 Unauthorized para fallos de login
-      res.status(401).json({ 
-        status: 'error', 
-        message: error.message 
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  // --- NUEVO MÉTODO: SOCIAL LOGIN (Google/Facebook) ---
-  static async socialLogin(req: Request, res: Response) {
+  // --- MÉTODO: SOCIAL LOGIN (Google/Facebook) ---
+  static async socialLogin(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, firstName, lastName, provider, providerId, photoUrl } = req.body;
+      const { email, firstName, lastName, provider, providerId, photoUrl } = req.body as SocialLoginInput;
 
-      // 1. Validaciones básicas
-      if (!email || !firstName || !lastName || !provider || !providerId) {
-        res.status(400).json({ 
-          message: 'Faltan campos obligatorios para social login' 
-        });
-        return;
-      }
-
-      // 2. Validar que el provider sea válido
-      if (!['google', 'facebook'].includes(provider)) {
-        res.status(400).json({ 
-          message: 'Proveedor de autenticación no válido' 
-        });
-        return;
-      }
-
-      // 3. Llamada a la Capa de Servicio
-      const data = await AuthService.socialLogin({
+      const result = await AuthService.socialLogin({
         email,
         firstName,
         lastName,
@@ -114,20 +92,117 @@ export class AuthController {
         photoUrl
       });
 
-      // 4. Respuesta estandarizada
       res.status(200).json({
-        status: 'success',
+        success: true,
         message: 'Social login exitoso',
-        token: data.token,
-        user: data.user,
+        // Include both 'token' (legacy) and 'accessToken' (new) for backward compatibility
+        token: result.accessToken,
+        user: result.user,
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+        },
       });
 
-    } catch (error: any) {
-      console.error('Error en social login:', error);
-      res.status(500).json({ 
-        status: 'error', 
-        message: error.message || 'Error en autenticación social'
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // --- MÉTODO: REFRESH TOKEN ---
+  static async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        throw AppError.badRequest('Refresh token es requerido', 'MISSING_REFRESH_TOKEN');
+      }
+
+      const result = await AuthService.refreshToken(refreshToken);
+
+      res.status(200).json({
+        success: true,
+        message: 'Token renovado exitosamente',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+        },
       });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // --- MÉTODO: FORGOT PASSWORD ---
+  static async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        throw AppError.badRequest('Email es requerido', 'MISSING_EMAIL');
+      }
+
+      const result = await AuthService.forgotPassword(email);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // --- MÉTODO: RESET PASSWORD ---
+  static async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        throw AppError.badRequest('Token y contraseña son requeridos', 'MISSING_FIELDS');
+      }
+
+      const result = await AuthService.resetPassword(token, password);
+
+      res.status(200).json({
+        success: true,
+        message: 'Contraseña restablecida exitosamente',
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // --- MÉTODO: CHANGE PASSWORD (authenticated) ---
+  static async changePassword(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!userId) {
+        throw AppError.unauthorized('No autenticado', 'NOT_AUTHENTICATED');
+      }
+
+      if (!currentPassword || !newPassword) {
+        throw AppError.badRequest('Contraseña actual y nueva son requeridas', 'MISSING_FIELDS');
+      }
+
+      const result = await AuthService.changePassword(userId, currentPassword, newPassword);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+
+    } catch (error) {
+      next(error);
     }
   }
 }

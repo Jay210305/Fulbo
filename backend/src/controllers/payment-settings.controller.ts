@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { PaymentSettingsService } from '../services/payment-settings.service';
+import { UpdatePaymentSettingsInput } from '../schemas/payment-settings.schema';
 
 export class PaymentSettingsController {
   /**
@@ -68,20 +69,9 @@ export class PaymentSettingsController {
         bankAccountHolder,
         bankCci,
         cashEnabled,
-      } = req.body;
+      } = req.body as UpdatePaymentSettingsInput;
 
-      // Validate phone numbers if enabled
-      if (yapeEnabled && !yapePhone) {
-        return res.status(400).json({ message: 'El número de Yape es requerido si Yape está habilitado' });
-      }
-      if (plinEnabled && !plinPhone) {
-        return res.status(400).json({ message: 'El número de Plin es requerido si Plin está habilitado' });
-      }
-      if (bankTransferEnabled && (!bankName || !bankAccountNumber || !bankAccountHolder)) {
-        return res.status(400).json({ 
-          message: 'Los datos bancarios son requeridos si la transferencia está habilitada' 
-        });
-      }
+      // Zod superRefine already validates conditional requirements
 
       const settings = await PaymentSettingsService.upsert(managerId, {
         yapeEnabled,

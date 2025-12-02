@@ -8,6 +8,7 @@ export interface FieldDisplay {
   name: string;
   status: 'active' | 'maintenance';
   rating: number;
+  reviewCount?: number;
   capacity: string;
   price: number;
   bookings: number;
@@ -36,6 +37,7 @@ export interface NewFieldForm {
   peakHourPrice: string;
   amenities: string[];
   description: string;
+  images: string[];
 }
 
 export interface EditPriceForm {

@@ -17,10 +17,13 @@ interface PlayerProfileProps {
 }
 
 export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitchMode, onOpenChat }: PlayerProfileProps) {
-  const {user, logout} = useUser();
+  const {user, logout, isManager} = useUser();
   const [showSettings, setShowSettings] = useState(false);
   const [showMyMatches, setShowMyMatches] = useState(false);
   const [showTeams, setShowTeams] = useState(false);
+
+  // Use either the prop or the context value (context is more reliable after page reload)
+  const effectiveIsOwner = isOwner || isManager();
 
   if (showSettings) {
     return <ProfileSettingsScreen onBack={() => setShowSettings(false)} />;
@@ -52,7 +55,7 @@ export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitc
           </button>
         </div>
 
-        {isOwner && (
+        {effectiveIsOwner && (
           <div className="bg-gradient-to-r from-[#047857] to-[#10b981] rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -192,7 +195,7 @@ export function PlayerProfile({ isOwner, currentMode, onRegisterAsOwner, onSwitc
         </div>
 
         <div className="pt-4 space-y-3">
-          {!isOwner && (
+          {!effectiveIsOwner && (
             <div className="bg-secondary rounded-xl p-4 border-2 border-[#047857] border-dashed">
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-10 h-10 bg-[#047857] rounded-full flex items-center justify-center flex-shrink-0">

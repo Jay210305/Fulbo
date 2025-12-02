@@ -8,6 +8,7 @@ interface UserData {
   avatar?: string;
   position?: string;
   bio?: string;
+  role?: string;
 }
 
 interface UserContextType {
@@ -17,13 +18,14 @@ interface UserContextType {
   isPhoneVerified: () => boolean;
   requiresPhoneVerification: () => boolean;
   logout: () => void;
+  isManager: () => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserData>({
-    name: '', email: '', phone: '', phoneVerified: false, position: '', bio: ''
+    name: '', email: '', phone: '', phoneVerified: false, position: '', bio: '', role: ''
   });
 
   // 1. Cargar perfil al iniciar
@@ -53,7 +55,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
             phone: data.phone_number || '',
             phoneVerified: !!data.phone_number,
             position: 'Jugador',
-            bio: ''
+            bio: '',
+            role: data.role || 'player'
           };
           
           setUser(userData);
@@ -99,6 +102,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const hasPhone = () => !!user.phone && user.phone.length >= 9;
   const isPhoneVerified = () => user.phoneVerified;
   const requiresPhoneVerification = () => !hasPhone() || !isPhoneVerified();
+  const isManager = () => user.role === 'manager';
 
   return (
     <UserContext.Provider value={{ 
@@ -107,7 +111,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       hasPhone, 
       isPhoneVerified, 
       requiresPhoneVerification,
-      logout // <--- 3. Exportar la función
+      logout,
+      isManager
     }}>
       {children}
     </UserContext.Provider>

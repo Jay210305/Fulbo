@@ -52,7 +52,10 @@ export function FieldCard({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Star size={14} fill="#facc15" className="text-[#facc15]" />
-              <span>{field.rating}</span>
+              <span>{field.rating > 0 ? field.rating.toFixed(1) : '-'}</span>
+              {field.reviewCount !== undefined && field.reviewCount > 0 && (
+                <span className="text-xs text-gray-400">({field.reviewCount})</span>
+              )}
             </div>
             <span>{field.capacity}</span>
             {field.address && (

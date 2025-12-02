@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma';
+import { ReviewService } from './review.service';
 
 export class FieldService {
   static async getNearbyFields(lat: number, lng: number, radiusKm: number = 5) {
@@ -62,13 +63,36 @@ export class FieldService {
   }
 
   static async getFieldById(id: string) {
-    return await prisma.fields.findUnique({
+    const field = await prisma.fields.findUnique({
       where: { field_id: id },
       include: {
         field_photos: true,
-        // En el futuro incluiremos reviews aquí
-      }
+        reviews: {
+          include: {
+            users: {
+              select: {
+                first_name: true,
+                last_name: true,
+              },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+          take: 5, // Latest 5 reviews
+        },
+      },
     });
+
+    if (!field) return null;
+
+    // Get rating statistics
+    const ratingStats = await ReviewService.getFieldRatingStats(id);
+
+    return {
+      ...field,
+      rating: ratingStats.averageRating,
+      reviewCount: ratingStats.reviewCount,
+      popularTags: ratingStats.popularTags,
+    };
   }
 
   /**

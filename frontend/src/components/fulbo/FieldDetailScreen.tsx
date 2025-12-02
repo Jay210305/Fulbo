@@ -7,6 +7,7 @@ import {
   Lightbulb,
   Clock,
   Loader2,
+  MessageSquarePlus,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
@@ -14,6 +15,8 @@ import { useCart } from "../../contexts/CartContext";
 import { useUser } from "../../contexts/UserContext";
 import { PhoneVerificationModal } from "./PhoneVerificationModal";
 import { Field } from "../../types/field";
+import { ReviewsList } from "../../features/reviews/components/ReviewsList";
+import { CreateReviewModal } from "../../features/reviews/modals/CreateReviewModal";
 
 interface FieldDetailScreenProps {
   fieldId: string; // Este será el UUID
@@ -29,6 +32,8 @@ export function FieldDetailScreen({
   const { requiresPhoneVerification, updateUser } = useUser();
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewsKey, setReviewsKey] = useState(0); // To force refresh reviews
   const {
     cart,
     setReservationDetails,
@@ -58,9 +63,11 @@ export function FieldDetailScreen({
           image:
             data.field_photos?.[0]?.image_url ||
             "https://via.placeholder.com/400",
-          // Mocks visuales
+          // Dynamic rating from reviews
           type: "7v7",
-          rating: 4.8,
+          rating: data.rating || 0,
+          reviewCount: data.reviewCount || 0,
+          popularTags: data.popularTags || [],
           available: 5,
           total: 10,
           hasFullVaso: false,
@@ -74,6 +81,23 @@ export function FieldDetailScreen({
         setLoading(false);
       });
   }, [fieldId]);
+
+  const handleReviewSuccess = () => {
+    // Refresh reviews list
+    setReviewsKey((prev) => prev + 1);
+    // Refetch field to update rating
+    fetch(`http://localhost:4000/api/fields/${fieldId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (field) {
+          setField({
+            ...field,
+            rating: data.rating || 0,
+            reviewCount: data.reviewCount || 0,
+          });
+        }
+      });
+  };
 
   const durationOptions = [
     { value: 1, label: "1 Hora" },
@@ -147,7 +171,14 @@ export function FieldDetailScreen({
             </div>
             <div className="flex items-center gap-1">
               <Star size={16} fill="#facc15" className="text-[#facc15]" />
-              <span className="text-sm">{field.rating}</span>
+              <span className="text-sm font-medium">
+                {field.rating > 0 ? field.rating.toFixed(1) : 'Sin calificaciones'}
+              </span>
+              {field.reviewCount > 0 && (
+                <span className="text-sm text-gray-400">
+                  ({field.reviewCount})
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -242,6 +273,27 @@ export function FieldDetailScreen({
             </div>
           </div>
         )}
+
+        {/* Reviews Section */}
+        <div className="border-t pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Reseñas</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReviewModal(true)}
+              className="text-[#047857] border-[#047857] hover:bg-[#047857]/10"
+            >
+              <MessageSquarePlus size={16} className="mr-2" />
+              Calificar
+            </Button>
+          </div>
+          <ReviewsList 
+            key={reviewsKey}
+            fieldId={fieldId} 
+            onWriteReview={() => setShowReviewModal(true)}
+          />
+        </div>
       </div>
 
       {/* Footer Sticky */}
@@ -260,6 +312,15 @@ export function FieldDetailScreen({
         open={showPhoneModal}
         onClose={() => setShowPhoneModal(false)}
         onVerified={handlePhoneVerified}
+      />
+
+      {/* Review Modal */}
+      <CreateReviewModal
+        fieldId={fieldId}
+        fieldName={field.name}
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSuccess={handleReviewSuccess}
       />
     </div>
   );
