@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "reviews" ADD COLUMN     "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
-ADD COLUMN     "updated_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP;
