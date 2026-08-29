@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  player
+  manager
+}
+
+enum FieldStatus {
+  active
+  maintenance
+}
+
+enum ProductCategory {
+  bebida
+  snack
+  equipo
+  promocion
+}
+
+enum DiscountType {
+  percentage
+  fixed_amount
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+}
+
+enum ScheduleBlockReason {
+  maintenance
+  personal
+  event
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String?
+  firstName      String
+  lastName       String
+  phoneNumber    String?
+  phoneVerified  Boolean  @default(false)
+  role           Role     @default(player)
+  avatar         String?
+  documentType   String?
+  documentNumber String?
+  city           String?
+  district       String?
+  position       String?
+  bio            String?
+  gameLevel      Int      @default(1)
+
+  fields           Field[]
+  bookings         Booking[]
+  reviews          Review[]
+  businessProfile  BusinessProfile?
+  paymentSettings  PaymentSettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BusinessProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  ruc          String
+  address      String?
+  phone        String?
+  email        String?
+  settings     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Field {
+  id               String      @id @default(uuid())
+  ownerId          String
+  owner            User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name             String
+  address          String
+  description      String?
+  type             String      // 5v5 | 7v7 | 11v11
+  surface          String?
+  capacity         Int?
+  basePricePerHour Float
+  weekendSurcharge Float?
+  nightSurcharge   Float?
+  status           FieldStatus @default(active)
+  amenities        Json
+  hasFullVaso      Boolean     @default(false)
+  fullVasoPromo    String?
+
+  photos         FieldPhoto[]
+  products       Product[]
+  promotions     Promotion[]
+  bookings       Booking[]
+  scheduleBlocks ScheduleBlock[]
+  reviews        Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model FieldPhoto {
+  id        String   @id @default(uuid())
+  fieldId   String
+  field     Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  url       String
+  isCover   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([fieldId])
+}
+
+model Product {
+  id          String          @id @default(uuid())
+  fieldId     String
+  field       Field           @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Float
+  image       String?
+  category    ProductCategory @default(bebida)
+  isActive    Boolean         @default(true)
+
+  bookingItems BookingProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fieldId])
+}
+
+model Promotion {
+  id            String       @id @default(uuid())
+  fieldId       String
+  field         Field        @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  discountType  DiscountType
+  discountValue Float
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean      @default(true)
+  image         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fieldId])
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  playerId      String
+  player        User          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  fieldId       String
+  field         Field         @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  startTime     DateTime
+  endTime       DateTime
+  totalPrice    Float
+  status        BookingStatus @default(pending)
+  paymentMethod String?
+  paymentStatus PaymentStatus @default(pending)
+  matchName     String?
+
+  bookingProducts BookingProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fieldId, startTime, endTime])
+  @@index([playerId])
+}
+
+model BookingProduct {
+  id          String  @id @default(uuid())
+  bookingId   String
+  booking     Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int
+  priceAtTime Float
+
+  @@index([bookingId])
+}
+
+model ScheduleBlock {
+  id        String             @id @default(uuid())
+  fieldId   String
+  field     Field              @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  startTime DateTime
+  endTime   DateTime
+  reason    ScheduleBlockReason
+  note      String?
+  createdBy String
+
+  createdAt DateTime @default(now())
+
+  @@index([fieldId, startTime, endTime])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  fieldId   String
+  field     Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    User     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  tags      String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fieldId, playerId])
+  @@index([fieldId])
+}
+
+model PaymentSettings {
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yapeEnabled         Boolean @default(false)
+  yapePhone           String?
+  plinEnabled         Boolean @default(false)
+  plinPhone           String?
+  bankTransferEnabled Boolean @default(false)
+  bankName            String?
+  bankAccountNumber   String?
+  bankAccountHolder   String?
+  bankCci             String?
+  cashEnabled         Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
