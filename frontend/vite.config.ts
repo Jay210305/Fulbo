@@ -16,8 +16,22 @@ function figmaAssetResolver() {
   }
 }
 
+function figmaPackageVersionResolver() {
+  return {
+    name: 'figma-package-version-resolver',
+    resolveId(source: string, importer: string | undefined, options: any) {
+      const match = source.match(/^((?:@[^/]+\/)?[^@/]+)@[0-9]/);
+      if (match) {
+        return this.resolve(match[1], importer, { skipSelf: true, ...options });
+      }
+      return null;
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
+    figmaPackageVersionResolver(),
     figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

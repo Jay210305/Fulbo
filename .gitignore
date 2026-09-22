@@ -1,4 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
 
+# Build output
+dist/
+build/
+coverage/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Prisma generated client
+backend/src/generated/
+
+# Graphify knowledge graph
 graphify-out/
 
-graphify-out/
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Misc
+*.tsbuildinfo
