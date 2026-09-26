@@ -1,6 +1,79 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
-    ".opencode/plugins/graphify.js"
-  ]
+    ".opencode/plugins/graphify.js",
+    ".opencode/plugins/superpowers.js",
+    ".opencode/plugins/ponytail.js"
+  ],
+  "permission": {
+    "webfetch": "allow",
+    "websearch": "allow"
+  },
+  "mcp": {
+    "fulbo-laya": {
+      "type": "local",
+      "command": [
+        "node",
+        ".opencode/mcp/laya-mcp.mjs"
+      ],
+      "cwd": ".",
+      "environment": {
+        "LAYA_PYTHON": "{env:LAYA_PYTHON}",
+        "LAYA_MODEL": "{env:LAYA_MODEL}",
+        "LAYA_ROUTER": "{env:LAYA_ROUTER}",
+        "LAYA_DEVICE": "{env:LAYA_DEVICE}",
+        "LAYA_PRELOAD": "{env:LAYA_PRELOAD}",
+        "LAYA_MIN_CONFIDENCE": "{env:LAYA_MIN_CONFIDENCE}",
+        "LAYA_NOUL_THRESHOLD": "{env:LAYA_NOUL_THRESHOLD}",
+        "LAYA_MAX_AMBIGUITY": "{env:LAYA_MAX_AMBIGUITY}",
+        "LAYA_MAX_LEN": "{env:LAYA_MAX_LEN}",
+        "LAYA_HEAD_MAX_LEN": "{env:LAYA_HEAD_MAX_LEN}"
+      },
+      "enabled": true
+    },
+    "fulbo-postgres": {
+      "type": "local",
+      "command": [
+        "cmd",
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "%FULBO_MCP_DATABASE_URL%"
+      ],
+      "enabled": false
+    },
+    "fulbo-git": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "mcp-server-git",
+        "--repository",
+        "."
+      ],
+      "cwd": "."
+    },
+    "fulbo-fetch": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "mcp-server-fetch"
+      ],
+      "environment": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "fulbo-docker": {
+      "type": "local",
+      "command": [
+        "docker",
+        "mcp",
+        "gateway",
+        "run",
+        "--profile",
+        "fulbo"
+      ],
+      "enabled": false
+    }
+  }
 }
