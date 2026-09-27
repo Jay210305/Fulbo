@@ -101,3 +101,31 @@ Part G rulings:
   path/timestamp.
 - Runtime-checkpoint gotcha (Windows): Invoke-RestMethod error bodies need
   curl.exe; the PS5.1 StreamReader trick returns empty bodies.
+
+Part H (H1+H2+H3): complete. TDD: tests/bookings.service.spec.ts (18 tests)
+RED first (mock needed [] defaults: vi.fn() returns undefined and .length
+crashes); suite 76/76. build ✅ lint ✅. Runtime checkpoint: unverified player
+POST /bookings → 403; verified booking Sat 20:00-22:00 + Gatorade×2 →
+total_price 232 EXACTLY (base 160 + weekend 40 + night 20 + products 10 +
+fee 2; client-sent totalPrice=999 ignored via declared-but-ignored DTO
+field, forbidNonWhitelisted would 400 otherwise); overlapping POST → 409
+{ type, startTime, endTime } no PII; GET /bookings/user + /:id (snake_case
+w/ nested fields); other player → 403; GET /bookings/field/:fieldId as
+manager shows users.phone_number (privacy rule honored: manager own-field
+only); PATCH cancel → cancelled; re-cancel → 409.
+
+Part H rulings:
+- POST /bookings 409 conflicts are player-safe: { type: 'booking'|'block',
+  startTime, endTime } — NO customer name/email (would leak other players'
+  PII; the BookingConflict type with customer info is manager-facing only,
+  used by Part G schedule).
+- Price: base×hours + weekend/night surcharges per hour at 30-min segment
+  granularity (local server time), + products (validated active own-field
+  products, else 400) + FULVASO_SERVICE_FEE (env, default 2; ponytail ceiling
+  until Phase 2 payments), rounded to 2 decimals. Unknown/inactive/foreign
+  products → 400.
+- GET /bookings/:id + PATCH cancel allow booking owner OR field owner.
+- Cancel of a cancelled booking → 409 (not idempotent).
+- Client totalPrice declared @IsOptional in DTO but always recomputed.
+- Runtime-checkpoint gotcha (PS): "$fid?from" parses as variable "$fid?from"
+  (empty) — use ${fid} in URLs with query strings.
