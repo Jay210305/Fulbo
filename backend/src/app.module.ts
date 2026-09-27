@@ -10,6 +10,8 @@ import { PromotionsModule } from './promotions/promotions.module.js';
 import { UploadModule } from './upload/upload.module.js';
 import { ScheduleModule } from './schedule/schedule.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
+import { ManagerModule } from './manager/manager.module.js';
+import { ReviewsModule } from './reviews/reviews.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 
@@ -25,6 +27,8 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     UploadModule,
     ScheduleModule,
     BookingsModule,
+    ManagerModule,
+    ReviewsModule,
   ],
   providers: [
     {

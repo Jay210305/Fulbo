@@ -129,3 +129,39 @@ Part H rulings:
 - Client totalPrice declared @IsOptional in DTO but always recomputed.
 - Runtime-checkpoint gotcha (PS): "$fid?from" parses as variable "$fid?from"
   (empty) — use ${fid} in URLs with query strings.
+
+Part I (I1+I2): complete. TDD: tests/reviews.service.spec.ts (8 tests) +
+tests/manager.service.spec.ts (11 tests) RED first; suite 95/95.
+build ✅ lint ✅. Runtime checkpoint (values matched psql ground truth):
+stats revenue 210 / total 4 / confirmed 3 / cancelled 1 / pending 0 /
+unique 1 / avg 52.5; chart 7 zero-filled points, today Sat ingresos 130
+(= psql SUM created today, LOCAL date grouping); manager bookings list
+with camelCase customer {id,name,email,phone}; profile + payment-settings
+GET/PUT round-trips (seeded values preserved); reviews: public GET (no
+auth), can-review true via past confirmed booking (psql-inserted
+00000000-...-077, past start/end), POST → Review saved + snake_case
+review, popularTags [Buen Césped, Puntualidad], after-POST can-review
+false with existingReview, no-booking POST → 403.
+
+Part I rulings:
+- Review eligibility = booking at that field with status='confirmed' AND
+  endTime <= now (the match must have happened). POST /reviews/:fieldId
+  upserts on (fieldId, playerId) @@unique → one review per player per
+  field. canReview = eligible && !existingReview.
+- popularTags = top 5 tags by frequency (count desc, name asc tiebreak).
+- Stats period (today|week|month|all) filters by createdAt (today = local
+  midnight, week = 7d, month = 30d); revenue eligibility = confirmed +
+  paymentStatus succeeded; averageBookingValue = revenue/totalBookings.
+- Chart: revenue (confirmed+succeeded) grouped by LOCAL date key
+  YYYY-MM-DD, last N days zero-filled, { day: short weekday, date, ingresos }.
+- GET /manager/profile returns { profile: row|null }; PUT upserts, returns
+  { message, profile }. Profile-create branch is cast (promote guarantees
+  the row; ponytail note in code).
+- GET /manager/payment-settings returns the row or shape-defaults
+  (all disabled, cashEnabled true) without persisting; PUT upserts.
+- Manager bookings filters: status exact; fieldId ANDed with own-field
+  `in` set (ownership never bypassable); startDate/endDate = overlap
+  semantics (endTime > from, startTime < to).
+- DI gotcha: inject PrismaService (not PrismaClient) as the ctor param
+  type — Nest resolves by design-time token; typing PrismaClient crashes
+  boot (ManagerService init failure caught in runtime checkpoint).
