@@ -50,10 +50,14 @@ Open follow-ups (tracked under integration/Part K work):
   `@react-oauth/google` flow), the phone-verification modal, and
   promote-to-manager in the owner-registration flow.
 - The live `src/app` screens are still mock-driven (`mockFields`, mock
-  teams/friends). Remaining wiring: fields (home/search/detail), the booking
+  teams/friends). Remaining wiring: fields (search/detail), the booking
   flow (checkout → create booking + 409 handling), and the manager screens
   (stats, field/product/schedule management). Frontend test tooling is set up
   (`npm test`, vitest + jsdom); add component tests as screens get wired.
+  **Done so far:** `src/services/field.api.ts` (public list/detail) +
+  `src/app/hooks/useFields.ts` + `HomeScreen` now load real fields
+  (loading/empty/error states, image from cover photo, address, status badge,
+  base price).
 - Chat `SOCKET_URL` needs `VITE_SOCKET_URL` when chat lands (Phase 2).
 
 See [frontend architecture](../architecture/frontend.md) for the current shape and

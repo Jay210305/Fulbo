@@ -243,3 +243,15 @@ Part K (integration — auth slice): COMPLETE.
 - Postgres container had stopped between sessions (docker compose up -d
   postgres to restore); e2e needs it running.
 
+Part K (fields list slice): COMPLETE. src/services/field.api.ts (public
+Field type matching serializeField camelCase + FieldApi.getFields/
+getFieldById; availability already in api.ts FieldAvailabilityApi) +
+src/app/hooks/useFields.ts (fetch + loading/error/reload) + HomeScreen
+wired to real data (cover-photo image, address, basePricePerHour, status
+badge instead of the mock available/total — the list endpoint has no
+per-date availability; status maps to Disponible/No disponible). Runtime
+verified against dev DB: 3 seeded fields with photos/status/price. build
+✅. Remaining: SearchScreen/FieldDetailScreen, booking flow, manager
+screens, phone-verification modal, OAuth social buttons.
+
+
