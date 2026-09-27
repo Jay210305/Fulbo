@@ -3,6 +3,7 @@ export interface SerializedUser {
   last_name: string;
   email: string;
   phone_number: string | null;
+  phone_verified: boolean;
   role: string;
 }
 
@@ -11,6 +12,7 @@ export function serializeUser(user: {
   lastName: string;
   email: string;
   phoneNumber: string | null;
+  phoneVerified: boolean;
   role: string;
 }): SerializedUser {
   return {
@@ -18,6 +20,7 @@ export function serializeUser(user: {
     last_name: user.lastName,
     email: user.email,
     phone_number: user.phoneNumber,
+    phone_verified: user.phoneVerified,
     role: user.role,
   };
 }

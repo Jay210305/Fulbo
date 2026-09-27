@@ -16,6 +16,7 @@ import { CreateSearchScreen } from "./CreateSearchScreen";
 import { FriendsScreen } from "./FriendsScreen";
 import { useUser } from "../../contexts/UserContext";
 import { io, Socket } from "socket.io-client";
+import { API_BASE_URL } from '../../services/api';
 
 // Interface merging both requirements: UI needs + Backend response
 interface ChatData {
@@ -31,7 +32,7 @@ interface ChatData {
   members?: string[];
 }
 
-const API_URL = "http://localhost:4000/api";
+const API_URL = `${API_BASE_URL}`;
 const SOCKET_URL = "http://localhost:4000";
 
 interface ChatScreenProps {

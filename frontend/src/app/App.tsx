@@ -22,7 +22,7 @@ import { ManagerProfile } from "./components/manager/ManagerProfile";
 import { CartProvider } from "./contexts/CartContext";
 import { MatchesProvider } from "./contexts/MatchesContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
-import { UserProvider } from "./contexts/UserContext";
+import { UserProvider, useUser } from "./contexts/UserContext";
 
 type AppMode = 'player' | 'manager';
 type AuthState = 'splash' | 'login' | 'register' | 'ownerRegistration' | 'authenticated';
@@ -167,60 +167,58 @@ function PlayerApp({ isOwner, currentMode, onRegisterAsOwner, onSwitchMode }: Pl
 }
 
 export default function App() {
+  return (
+    <UserProvider>
+      <AppContent />
+    </UserProvider>
+  );
+}
+
+function AppContent() {
+  const { isRestoring, isAuthenticated, login, register, authError } = useUser();
   const [currentMode, setCurrentMode] = useState<AppMode>('player');
   const [isOwner, setIsOwner] = useState(false);
-  const [authState, setAuthState] = useState<AuthState>('splash');
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [showOwnerRegistration, setShowOwnerRegistration] = useState(false);
   const [managerTab, setManagerTab] = useState('dashboard');
-
-  // Simulate splash screen auto-advance
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (authState === 'splash') {
-        setAuthState('login');
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [authState]);
 
   const handleSwitchMode = () => {
     if (isOwner) {
       setCurrentMode(currentMode === 'player' ? 'manager' : 'player');
     }
-  }
+  };
 
-  // Authentication flow
-  if (authState === 'splash') {
+  if (isRestoring) {
     return <SplashScreen />;
   }
 
-  if (authState === 'login') {
+  if (!isAuthenticated) {
+    if (authView === 'register') {
+      return (
+        <RegisterScreen
+          onRegister={register}
+          onBack={() => setAuthView('login')}
+          error={authError}
+        />
+      );
+    }
     return (
       <LoginScreen
-        onLogin={() => setAuthState('authenticated')}
-        onRegister={() => setAuthState('register')}
+        onLogin={login}
+        onRegister={() => setAuthView('register')}
+        error={authError}
       />
     );
   }
 
-  if (authState === 'register') {
-    return (
-      <RegisterScreen
-        onRegister={() => setAuthState('authenticated')}
-        onBack={() => setAuthState('login')}
-      />
-    );
-  }
-
-  if (authState === 'ownerRegistration') {
+  if (showOwnerRegistration) {
     return (
       <OwnerRegistration
         onComplete={() => {
           setIsOwner(true);
-          setAuthState('authenticated');
+          setShowOwnerRegistration(false);
         }}
-        onCancel={() => {
-          setAuthState('authenticated');
-        }}
+        onCancel={() => setShowOwnerRegistration(false)}
       />
     );
   }
@@ -228,22 +226,20 @@ export default function App() {
   // Main App - Player Mode
   if (currentMode === 'player') {
     return (
-      <UserProvider>
-        <CartProvider>
-          <MatchesProvider>
-            <TeamsProvider>
-              <div className="min-h-screen bg-white">
-                <PlayerApp
-                  isOwner={isOwner}
-                  currentMode={currentMode}
-                  onRegisterAsOwner={() => setAuthState('ownerRegistration')}
-                  onSwitchMode={handleSwitchMode}
-                />
-              </div>
-            </TeamsProvider>
-          </MatchesProvider>
-        </CartProvider>
-      </UserProvider>
+      <CartProvider>
+        <MatchesProvider>
+          <TeamsProvider>
+            <div className="min-h-screen bg-white">
+              <PlayerApp
+                isOwner={isOwner}
+                currentMode={currentMode}
+                onRegisterAsOwner={() => setShowOwnerRegistration(true)}
+                onSwitchMode={handleSwitchMode}
+              />
+            </div>
+          </TeamsProvider>
+        </MatchesProvider>
+      </CartProvider>
     );
   }
 

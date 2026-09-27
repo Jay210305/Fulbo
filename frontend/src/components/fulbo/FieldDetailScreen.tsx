@@ -17,6 +17,7 @@ import { PhoneVerificationModal } from "./PhoneVerificationModal";
 import { Field } from "../../types/field";
 import { ReviewsList } from "../../features/reviews/components/ReviewsList";
 import { CreateReviewModal } from "../../features/reviews/modals/CreateReviewModal";
+import { API_BASE_URL } from '../../services/api';
 
 interface FieldDetailScreenProps {
   fieldId: string; // Este será el UUID
@@ -48,7 +49,7 @@ export function FieldDetailScreen({
   useEffect(() => {
     if (!fieldId) return;
 
-    fetch(`http://localhost:4000/api/fields/${fieldId}`)
+    fetch(`${API_BASE_URL}/fields/${fieldId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Error cargando detalle");
         return res.json();
@@ -86,7 +87,7 @@ export function FieldDetailScreen({
     // Refresh reviews list
     setReviewsKey((prev) => prev + 1);
     // Refetch field to update rating
-    fetch(`http://localhost:4000/api/fields/${fieldId}`)
+    fetch(`${API_BASE_URL}/fields/${fieldId}`)
       .then((res) => res.json())
       .then((data) => {
         if (field) {

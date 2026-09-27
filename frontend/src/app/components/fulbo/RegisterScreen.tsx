@@ -4,41 +4,52 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { CheckCircle2 } from "lucide-react";
+import type { RegisterData } from "../../../services/auth.api";
 
 interface RegisterScreenProps {
-  onRegister: () => void;
+  onRegister: (data: RegisterData) => Promise<void>;
   onBack: () => void;
+  error?: string | null;
 }
 
-export function RegisterScreen({ onRegister, onBack }: RegisterScreenProps) {
+export function RegisterScreen({ onRegister, onBack, error }: RegisterScreenProps) {
   const [step, setStep] = useState(1);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const handleStep1 = () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      setLocalError("Ingresa tus nombres y apellidos");
+      return;
+    }
+    setLocalError(null);
     setStep(2);
   };
 
-  const handleStep2 = () => {
-    setShowSuccess(true);
-    setTimeout(() => {
-      onRegister();
-    }, 2000);
+  const handleStep2 = async () => {
+    if (!email || password.length < 6) {
+      setLocalError("Ingresa un correo válido y una contraseña de al menos 6 caracteres");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setLocalError("Las contraseñas no coinciden");
+      return;
+    }
+    setLocalError(null);
+    setLoading(true);
+    try {
+      await onRegister({ email, password, firstName, lastName });
+    } catch {
+      // error surfaced via the authError prop from the session context
+    } finally {
+      setLoading(false);
+    }
   };
-
-  if (showSuccess) {
-    return (
-      <div className="min-h-screen bg-[#289B5F] flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-6">
-          <CheckCircle2 size={80} className="text-white mx-auto" />
-          <div className="space-y-2">
-            <Logo variant="white" size="lg" />
-            <p className="text-white text-xl">CONEXIÓN EXITOSA</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (step === 1) {
     return (
@@ -52,12 +63,24 @@ export function RegisterScreen({ onRegister, onBack }: RegisterScreenProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">Nombres</Label>
-              <Input id="firstName" placeholder="Ingresa tus nombres" className="h-12" />
+              <Input
+                id="firstName"
+                placeholder="Ingresa tus nombres"
+                className="h-12"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="lastName">Apellidos</Label>
-              <Input id="lastName" placeholder="Ingresa tus apellidos" className="h-12" />
+              <Input
+                id="lastName"
+                placeholder="Ingresa tus apellidos"
+                className="h-12"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
@@ -109,6 +132,12 @@ export function RegisterScreen({ onRegister, onBack }: RegisterScreenProps) {
             </div>
           </div>
 
+          {localError && (
+            <p className="text-sm text-red-600" role="alert">
+              {localError}
+            </p>
+          )}
+
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={onBack} className="flex-1 h-12">
               Volver
@@ -133,26 +162,57 @@ export function RegisterScreen({ onRegister, onBack }: RegisterScreenProps) {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Correo electrónico</Label>
-            <Input id="email" type="email" placeholder="ejemplo@correo.com" className="h-12" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="ejemplo@correo.com"
+              className="h-12"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
-            <Input id="password" type="password" placeholder="••••••••" className="h-12" />
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              className="h-12"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-            <Input id="confirmPassword" type="password" placeholder="••••••••" className="h-12" />
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              className="h-12"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
           </div>
         </div>
+
+        {(error || localError) && (
+          <p className="text-sm text-red-600" role="alert">
+            {error || localError}
+          </p>
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12">
             Atrás
           </Button>
-          <Button onClick={handleStep2} className="flex-1 h-12 bg-[#289B5F] hover:bg-[#289B5F]/90">
-            Registrarse
+          <Button
+            onClick={handleStep2}
+            disabled={loading}
+            className="flex-1 h-12 bg-[#289B5F] hover:bg-[#289B5F]/90"
+          >
+            {loading ? "Registrando..." : "Registrarse"}
           </Button>
         </div>
       </div>

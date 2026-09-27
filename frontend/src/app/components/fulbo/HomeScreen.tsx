@@ -2,7 +2,7 @@ import { MapPin, Wine, ShoppingCart } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { PromotionsCarousel } from "../shared/PromotionsCarousel";
-import { mockFields } from "../../types/field";
+import { useFields } from "../../hooks/useFields";
 import { useCart } from "../../contexts/CartContext";
 
 interface HomeScreenProps {
@@ -12,6 +12,7 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onFieldClick, onCartClick }: HomeScreenProps) {
   const { getTotalItems, cart } = useCart();
+  const { fields, loading, error } = useFields();
   const totalItems = getTotalItems();
   const hasReservation = cart.field && cart.selectedTime;
 
@@ -47,8 +48,23 @@ export function HomeScreen({ onFieldClick, onCartClick }: HomeScreenProps) {
 
         <div>
           <h3 className="mb-3">Canchas Disponibles</h3>
+          {loading && (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              Cargando canchas...
+            </p>
+          )}
+          {!loading && error && (
+            <p className="text-sm text-red-600 py-8 text-center" role="alert">
+              {error}
+            </p>
+          )}
+          {!loading && !error && fields.length === 0 && (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No hay canchas disponibles por ahora.
+            </p>
+          )}
           <div className="space-y-4">
-            {mockFields.map((field) => (
+            {fields.map((field) => (
               <div
                 key={field.id}
                 onClick={() => onFieldClick(field.id)}
@@ -56,17 +72,17 @@ export function HomeScreen({ onFieldClick, onCartClick }: HomeScreenProps) {
               >
                 <div className="relative h-48">
                   <ImageWithFallback
-                    src={field.image}
+                    src={field.photos.find((p) => p.isCover)?.url ?? field.photos[0]?.url ?? ""}
                     alt={field.name}
                     className="w-full h-full object-cover"
                   />
-                  {field.available > 0 ? (
+                  {field.status === "active" ? (
                     <Badge className="absolute top-3 right-3 bg-[#34d399] hover:bg-[#34d399]/90 text-white border-none">
-                      Libre {field.available}/{field.total}
+                      Disponible
                     </Badge>
                   ) : (
                     <Badge className="absolute top-3 right-3 bg-red-500 hover:bg-red-500/90 text-white border-none">
-                      Ocupado
+                      No disponible
                     </Badge>
                   )}
                   {field.hasFullVaso && (
@@ -81,9 +97,9 @@ export function HomeScreen({ onFieldClick, onCartClick }: HomeScreenProps) {
                   <h3 className="mb-2">{field.name}</h3>
                   <div className="flex items-center text-muted-foreground text-sm mb-2">
                     <MapPin size={14} className="mr-1" />
-                    {field.location}
+                    {field.address}
                   </div>
-                  <p className="text-[#289B5F]">S/ {field.price}.00 la hora</p>
+                  <p className="text-[#289B5F]">S/ {field.basePricePerHour}.00 la hora</p>
                 </div>
               </div>
             ))}

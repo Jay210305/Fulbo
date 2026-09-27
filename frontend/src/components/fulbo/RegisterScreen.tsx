@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { CheckCircle2 } from "lucide-react";
+import { API_BASE_URL } from '../../services/api';
 
 interface RegisterScreenProps {
   onRegister: () => void;
@@ -58,7 +59,7 @@ export function RegisterScreen({ onRegister, onBack }: RegisterScreenProps) {
 
     try {
       // 1. CONEXIÓN CON BACKEND (Puerto 4000)
-      const response = await fetch('http://localhost:4000/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

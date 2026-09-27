@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { MapPin, Star, ArrowLeft, Loader2 } from "lucide-react"; // Agregué Loader2 para carga
 import { Badge } from "../ui/badge";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { API_BASE_URL } from '../../services/api';
 
 interface FieldMapScreenProps {
   onBack: () => void;
@@ -39,7 +40,7 @@ export function FieldMapScreen({ onBack }: FieldMapScreenProps) {
 
         // 2. Llamada al Backend Real
         fetch(
-          `http://localhost:3000/api/fields?lat=${latitude}&lng=${longitude}`
+          `${API_BASE_URL}/fields?lat=${latitude}&lng=${longitude}`
         )
           .then((res) => {
             if (!res.ok) throw new Error("Error al conectar con el servidor");

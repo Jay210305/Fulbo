@@ -5,6 +5,7 @@ import { PromotionsCarousel } from "../shared/PromotionsCarousel";
 
 import { useCart } from "../../contexts/CartContext";
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from '../../services/api';
 
 interface HomeScreenProps {
   onFieldClick: (fieldId: string) => void;
@@ -35,7 +36,7 @@ export function HomeScreen({ onFieldClick, onCartClick }: HomeScreenProps) {
 
   // EFECTO PARA CARGAR DATOS DEL BACKEND
   useEffect(() => {
-    fetch("http://localhost:4000/api/fields")
+    fetch(`${API_BASE_URL}/fields`)
       .then((res) => res.json())
       .then((data) => {
         setFields(data);

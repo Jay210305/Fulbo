@@ -21,8 +21,10 @@ Environment variables (all optional):
 
     LAYA_PYTHON        interpreter that has ``laya`` installed (resolved by the
                        Node launcher, not read here).
-    LAYA_MODEL         ``typed-decisions`` (default), ``english``,
-                       ``multilingual`` or ``auto``.
+    LAYA_MODEL         ``english`` (default), ``typed-decisions``,
+                       ``multilingual`` or ``auto``. ``english`` is the general
+                       checkpoint; ``typed-decisions`` is fine-tuned on four
+                       specific workflows and is near-chance on other schemas.
     LAYA_ROUTER        ``1``/``0`` --- use Laya's built-in Router (default 1).
     LAYA_DEVICE        e.g. ``cpu`` or ``cuda``; Laya decides when unset.
     LAYA_PRELOAD       ``1``/``0`` --- preload all checkpoints (default 0;
@@ -50,7 +52,7 @@ os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS", "1")
 
 SENTINEL = "@@LAYA_MCP@@"
 
-DEFAULT_MODEL = "typed-decisions"
+DEFAULT_MODEL = "english"
 DEFAULT_MIN_CONFIDENCE = 0.6
 DEFAULT_NOUL_THRESHOLD = 0.5
 DEFAULT_MAX_AMBIGUITY = 1.5
@@ -464,7 +466,11 @@ def handle_validate_plan(args):
 
     task_results = []
     for index, task in enumerate(tasks, start=1):
-        state = {"plan": plan, "task": task}
+        # Task first: build_sequence truncates the state from the right to the
+        # model's max_len, so a full plan ahead of it would push the task out of
+        # the context window and every task would be judged against the same
+        # prefix of the plan. This is task-first for that reason.
+        state = {"task": task, "plan": plan}
         if context:
             state["context"] = context
         try:
