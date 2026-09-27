@@ -27,6 +27,7 @@ enum ProductCategory {
 enum DiscountType {
   percentage
   fixed_amount
+  two_for_one
 }
 
 enum BookingStatus {

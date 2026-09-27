@@ -245,13 +245,13 @@ chartData       = GROUP BY DATE(createdAt), SUM(totalPrice), last N days
 - [x] **Part C** — auth module (login, register, social, send-otp, verify-otp; JWT strategy; Twilio service). Verified 2026-09-26: API boots, DB connects, all five auth routes mapped, Swagger at `/api/docs` returns 200, DTO validation active.
 - [x] **Part D** — users module (`GET /users/profile`, `PUT /users/phone`, `POST /users/promote-to-manager`). TDD: 5 unit tests (`tests/users.service.spec.ts`). Runtime checkpoint verified: profile returns the snake_case contract shape; promote 403s on unverified phone, then bumps role to `manager` and upserts a `BusinessProfile` once verified.
 - [x] **Part E** — fields module: public `GET /fields`, `GET /fields/:id` (rating/reviews), `GET /fields/:id/availability`; manager CRUD `/manager/fields` with ownership 403s. TDD: 15 unit tests (`tests/fields.service.spec.ts`). Runtime checkpoint verified against the seeded data (list/detail/availability positive+negative, create/edit/delete, player→manager route 403).
+- [x] **Part F** — upload + products + promotions. Migration `20260927020842_add_two_for_one_discount_type` (enum extension). TDD: 20 unit tests (`tests/{products,promotions,upload}.service.spec.ts`); suite 47/47. Runtime checkpoint: product + promotion CRUD verified via HTTP (including a `two_for_one` promotion); upload returns a clean 503 while Cloudinary creds are unset (ADR 005 — real upload verification deferred until credentials are configured).
 
 Known schema deviations from section "Database schema" (implemented in Part B, accepted): `Field.type` is a `String` (`5v5|7v7|11v11`) instead of a `FieldType` enum; `DiscountType` lacks `TWO_FOR_ONE` (needed by Part F promotions — add with a migration then); `ScheduleBlock.reason` is a `ScheduleBlockReason` enum instead of `String`.
 
 ### Pending
 
-- [ ] Part D → Part K (see table above)
-- [ ] Part F: extend `DiscountType` with `TWO_FOR_ONE` (schema + migration) before promotions CRUD
+- [ ] Part G → Part K (see table above)
 
 ## Completion rule
 

@@ -62,3 +62,24 @@ Part E rulings:
   not honored.
 - CreateFieldDto.type optional, defaults '7v7' in service (frontend
   CreateFieldDto sends no type; schema requires it).
+
+Part F: complete. Migration 20260927020842_add_two_for_one_discount_type
+applied (ALTER TYPE ... ADD VALUE 'two_for_one'); client regenerated; seed
+compatible (uses percentage only). TDD: products.service.spec.ts (8),
+promotions.service.spec.ts (8), upload.service.spec.ts (4) — RED first,
+suite 47/47. build ✅ lint ✅. Runtime checkpoint: products CRUD
+(create→get(fieldName)→update(imageUrl→image)→toggle→delete) and promotions
+CRUD (create two_for_one → get → update → deactivate → delete) verified via
+HTTP as manager; upload POST/DELETE without Cloudinary creds → clean 503.
+
+Part F rulings:
+- Product create/update accept `imageUrl` (frontend DTO) and store into the
+  `image` column; responses return both `image` and `imageUrl`.
+- Product/promotion DELETE are hard deletes (no soft-delete column; Part B
+  accepted cascades — deleting a product removes its BookingProduct rows).
+- Upload without Cloudinary creds → 503 ServiceUnavailable with a clear
+  message (ADR 005 stands; real upload verified once creds are configured).
+- `?folder=` defaults to 'fulbo'; public id parsed from url after
+  '/upload/v<version>/'; DELETE /upload expects { url }.
+- tsconfig "types" now includes "multer" (Express.Multer global namespace
+  comes from @types/multer; was restricted to vitest/globals+node).
