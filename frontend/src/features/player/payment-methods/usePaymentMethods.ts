@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useCart } from '../../../contexts/CartContext';
 import { useMatches } from '../../../contexts/MatchesContext';
 import { BookingPayload, BookingResponse, NewMatch, NewChat } from './types';
+import { API_BASE_URL } from '../../../services/api';
 
 interface UsePaymentMethodsProps {
   matchName: string;
@@ -52,7 +53,7 @@ export function usePaymentMethods({ matchName, onPaymentComplete }: UsePaymentMe
       };
 
       // 4. Llamada a la API
-      const response = await fetch('http://localhost:4000/api/bookings', {
+      const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

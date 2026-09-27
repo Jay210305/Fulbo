@@ -1,6 +1,6 @@
 // Upload API service for handling file uploads to Cloudinary via backend
 
-const API_BASE_URL = 'http://localhost:4000/api';
+import { API_BASE_URL } from './api';
 
 interface UploadResponse {
   url: string;

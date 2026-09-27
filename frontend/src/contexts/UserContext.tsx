@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_BASE_URL } from '../services/api';
 
 interface UserData {
   name: string;
@@ -38,7 +39,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       try {
         console.log("📡 Solicitando perfil al backend...");
-        const response = await fetch('http://localhost:4000/api/users/profile', {
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Mail } from "lucide-react";
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
+import { API_BASE_URL } from '../../services/api';
 
 // Configuración - En producción, estas deberían estar en variables de entorno
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
@@ -89,7 +90,7 @@ function LoginScreenContent({ onLogin, onRegister }: LoginScreenProps) {
     try {
       setIsLoading(true);
       
-      const response = await fetch('http://localhost:4000/api/auth/social', {
+      const response = await fetch(`${API_BASE_URL}/auth/social`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -195,7 +196,7 @@ function LoginScreenContent({ onLogin, onRegister }: LoginScreenProps) {
   const handleEmailLogin = async () => {
     try {
       // 1. Petición al Backend
-      const response = await fetch('http://localhost:4000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

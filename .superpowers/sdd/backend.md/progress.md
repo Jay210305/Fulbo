@@ -165,3 +165,37 @@ Part I rulings:
 - DI gotcha: inject PrismaService (not PrismaClient) as the ctor param
   type — Nest resolves by design-time token; typing PrismaClient crashes
   boot (ManagerService init failure caught in runtime checkpoint).
+
+Part J: complete. PWA + fixes per docs/plans/current/frontend.md:
+- Deps: vite-plugin-pwa@1.3.0 + socket.io-client + @react-oauth/google.
+- Icons via ffmpeg from the 962x1024 JPEG logo (it is a JPEG despite the
+  .png name): center-crop square → 192/512; maskable = 436 padded to 512
+  on #047857. public/pwa-{192x192,512x512,maskable-512x512}.png.
+- manifest: static public/manifest.json (Fulbo/#047857/standalone/portrait,
+  3 icons); VitePWA({ registerType:'autoUpdate', manifest:false, ... }) so
+  the plugin does NOT generate a default stub manifest.webmanifest (it
+  injects a duplicate <link rel=manifest> otherwise).
+- Workbox generateSW: precache globPatterns, navigateFallback index.html,
+  runtimeCaching api-cache NetworkFirst + images-cache CacheFirst (both
+  verified in dist/sw.js strings + served via vite preview: manifest/
+  sw.js/registerSW.js/icons all 200).
+- VITE_API_BASE_URL: services/api.ts exports API_BASE_URL (env || dev
+  fallback); upload.api.ts imports it; 10 legacy screens + UserContext +
+  usePaymentMethods converted incl. FieldMapScreen :3000. SOCKET_URL in
+  chat screens left hardcoded (chat = Phase 2; needs VITE_SOCKET_URL).
+- npm run build ✅ (18.9s, precache 10 entries). NOT wired yet: live
+  src/app screens remain mock-driven — integration of auth/fields/
+  bookings into live screens pairs with Part K (per integration.md).
+
+Part J gotchas (PowerShell — all cost real time):
+- `[char]13 + [char]10` in PS 5.1 does STRING concatenation ("`r`n"),
+  not int math — do not use it for newline detection; use "..." escapes.
+- .NET Regex '(?m)^import .*$' on CRLF content: the match INCLUDES the
+  trailing \r ($ matches between \r and \n) — inserting at match end
+  puts text before the line's \n and produced stray bytes (doubled CR +
+  lone LF) → git classified files w/-text (binary) → all-line diffs and
+  NO autocrlf conversion on add. Diagnosis tool: `git ls-files --eol`
+  (i/lf w/-text); `git diff --ignore-cr-at-eol` isolates real changes;
+  repair byte-level (drop 13-13-10→13-10, lone 10→13 10) → w/crlf clean.
+- repo state: blobs LF on disk CRLF (autocrlf=true) — write tool output
+  (LF lines) into CRLF files leaves w/mixed; normalize before commit.

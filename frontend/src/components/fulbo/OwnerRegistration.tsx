@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Textarea } from "../ui/textarea";
 import { CheckCircle2 } from "lucide-react";
 import shieldLogo from '../../assets/2068dbd9380c484f3b804acfa0e6103786f83524.png';
+import { API_BASE_URL } from '../../services/api';
 
 interface OwnerRegistrationProps {
   onComplete: () => void;
@@ -39,7 +40,7 @@ export function OwnerRegistration({ onComplete, onCancel }: OwnerRegistrationPro
       const token = localStorage.getItem('token');
       
       // CONEXIÓN AL BACKEND REAL
-      const response = await fetch('http://localhost:4000/api/users/promote-to-manager', {
+      const response = await fetch(`${API_BASE_URL}/users/promote-to-manager`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

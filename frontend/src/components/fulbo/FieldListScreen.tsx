@@ -13,6 +13,7 @@ import { PromotionsCarousel } from "../shared/PromotionsCarousel";
 import { FieldTypeFilter } from "./FieldTypeFilter";
 import { ProductDetailModal } from "./ProductDetailModal";
 import { FulVasoCart } from "./FulVasoCart";
+import { API_BASE_URL } from '../../services/api';
 
 interface FieldListScreenProps {
   onFieldClick: (fieldId: string) => void;
@@ -81,7 +82,7 @@ export function FieldListScreen({
 
   // CARGAR CANCHAS DEL BACKEND
   useEffect(() => {
-    fetch("http://localhost:4000/api/fields")
+    fetch(`${API_BASE_URL}/fields`)
       .then((res) => {
         if (!res.ok) throw new Error("Error al cargar canchas");
         return res.json();
