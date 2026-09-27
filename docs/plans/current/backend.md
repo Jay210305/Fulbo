@@ -243,6 +243,7 @@ chartData       = GROUP BY DATE(createdAt), SUM(totalPrice), last N days
 - [x] **Part A** — scaffold + Docker + config + common infra (guards, decorators, `Role`, `AllExceptionsFilter`, Swagger, CORS, validation, `/api` prefix, port 4000). Verified: `npm run build` + `npm run lint` pass.
 - [x] **Part B** — Prisma schema, initial migration `20260828162515_init`, `seed.ts`. Verified 2026-09-26: `prisma validate` passes, migrations applied, all 11 tables present in PostgreSQL.
 - [x] **Part C** — auth module (login, register, social, send-otp, verify-otp; JWT strategy; Twilio service). Verified 2026-09-26: API boots, DB connects, all five auth routes mapped, Swagger at `/api/docs` returns 200, DTO validation active.
+- [x] **Part D** — users module (`GET /users/profile`, `PUT /users/phone`, `POST /users/promote-to-manager`). TDD: 5 unit tests (`tests/users.service.spec.ts`). Runtime checkpoint verified: profile returns the snake_case contract shape; promote 403s on unverified phone, then bumps role to `manager` and upserts a `BusinessProfile` once verified.
 
 Known schema deviations from section "Database schema" (implemented in Part B, accepted): `Field.type` is a `String` (`5v5|7v7|11v11`) instead of a `FieldType` enum; `DiscountType` lacks `TWO_FOR_ONE` (needed by Part F promotions — add with a migration then); `ScheduleBlock.reason` is a `ScheduleBlockReason` enum instead of `String`.
 
