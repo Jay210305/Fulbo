@@ -1,6 +1,8 @@
 # Current integration plan
 
-Integration proceeds from stable contracts, not by wiring placeholder UI directly to unfinished services.
+Integration proceeds from stable contracts, not by wiring placeholder UI directly to
+unfinished services. The REST/OpenAPI contract is maintained in
+[the current backend plan](backend.md#api-contract-frontend-contract--source-of-truth).
 
 1. Publish and review the REST/OpenAPI contract.
 2. Configure the frontend API base URL per environment.
