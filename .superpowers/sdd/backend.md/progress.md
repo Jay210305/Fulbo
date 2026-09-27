@@ -35,3 +35,30 @@ Part D rulings:
 - Unverified promote → 403 ForbiddenException.
 - Runtime-checkpoint gotcha (Windows): Get-Content can return an array with a
   trailing empty line — sanitize before interpolating into request bodies.
+
+Part E: complete. TDD: tests/fields.service.spec.ts written first (RED on
+missing module), then GREEN (15 tests; suite 20/20). build ✅ lint ✅.
+Runtime checkpoint: public GET /fields (3 fields, stats), GET /fields/:id
+(rating/reviewCount/photos/amenities), GET availability (positive overlap
+window → 1 slot, non-overlap → 0; seeded booking is 2026-08-31T01:00Z);
+manager list (3 own) / create (defaults type 7v7, amenities {}) / edit (price
+55) / delete; player on /manager/fields → 403.
+
+Part E rulings:
+- Contract source: services/api.ts + services/manager.api.ts (the live app
+  entry src/main.tsx renders src/app/App.tsx, whose screens are mock-driven;
+  the legacy fetch screens in src/components/fulbo/ are unreachable, so their
+  snake_case reads (field_id, base_price_per_hour, field_photos, image_url,
+  popularTags) are NOT served. Part J wires the service layer.)
+- Public list/detail include only ACTIVE promotions; manager views include
+  all promotions.
+- Field detail returns rating + reviewCount + raw reviews rows (plan wording
+  "photos, amenities, rating, reviews"); popularTags/full review listing is
+  Part I's /reviews/:fieldId.
+- GET /fields?lat=&lng= accepted but ignored — no coordinates in schema
+  (Phase 2; FieldMapScreen is legacy/broken to be fixed in Part J).
+- DELETE /manager/fields/:id is a hard delete (schema has no soft-delete
+  column; Part B accepted cascade deletes). Frontend comment "soft delete"
+  not honored.
+- CreateFieldDto.type optional, defaults '7v7' in service (frontend
+  CreateFieldDto sends no type; schema requires it).

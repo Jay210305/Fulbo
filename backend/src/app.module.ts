@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
+import { FieldsModule } from './fields/fields.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 
@@ -13,6 +14,7 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     PrismaModule,
     AuthModule,
     UsersModule,
+    FieldsModule,
   ],
   providers: [
     {
