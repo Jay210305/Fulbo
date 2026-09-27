@@ -83,3 +83,21 @@ Part F rulings:
   '/upload/v<version>/'; DELETE /upload expects { url }.
 - tsconfig "types" now includes "multer" (Express.Multer global namespace
   comes from @types/multer; was restricted to vitest/globals+node).
+
+Part G (G1+G2+G3): complete. TDD: tests/schedule.service.spec.ts (11 tests)
+RED first; suite 58/58. build ✅ lint ✅. Runtime checkpoint (after inserting a
+future confirmed booking via psql — note Booking.updatedAt is NOT NULL, set
+now()): overlap block → 409 { statusCode, error, message, conflicts[{
+bookingId, startTime, endTime, customerName, customerEmail }], path,
+timestamp }; free block → created (fieldName serialized); list all (date
+filters) + list by field + get by id + delete all verified.
+
+Part G rulings:
+- Block-create overlap checks BOOKINGS only (pending/confirmed); block-vs-block
+  overlap is not checked (BookingConflict shape is bookings-only; manager's
+  own calendar).
+- 409 body: ConflictException({ statusCode, error: 'Conflict', message,
+  conflicts }) — the AllExceptionsFilter preserves extra fields and adds
+  path/timestamp.
+- Runtime-checkpoint gotcha (Windows): Invoke-RestMethod error bodies need
+  curl.exe; the PS5.1 StreamReader trick returns empty bodies.

@@ -8,6 +8,7 @@ import { FieldsModule } from './fields/fields.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { PromotionsModule } from './promotions/promotions.module.js';
 import { UploadModule } from './upload/upload.module.js';
+import { ScheduleModule } from './schedule/schedule.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { RolesGuard } from './common/guards/roles.guard.js';
 
@@ -21,6 +22,7 @@ import { RolesGuard } from './common/guards/roles.guard.js';
     ProductsModule,
     PromotionsModule,
     UploadModule,
+    ScheduleModule,
   ],
   providers: [
     {
