@@ -199,3 +199,23 @@ Part J gotchas (PowerShell — all cost real time):
   repair byte-level (drop 13-13-10→13-10, lone 10→13 10) → w/crlf clean.
 - repo state: blobs LF on disk CRLF (autocrlf=true) — write tool output
   (LF lines) into CRLF files leaves w/mixed; normalize before commit.
+
+Part K (backend e2e): COMPLETE. tests/app.e2e-spec.ts — 20 tests, full
+HTTP stack (configureApp extracted to src/app.bootstrap.ts, shared by
+main.ts + e2e; importing main.ts directly would run bootstrap()).
+Disposable DB: reads DATABASE_URL from .env, swaps db name to fulbo_e2e,
+CREATE/DROP via docker compose exec psql, prisma migrate deploy per run.
+Full player+manager journey via API only (dev OTP 123456): register/
+login/profile (login=200, promote=200; wrong password must be >=6 chars
+to reach 401 past DTO MinLength), forbidNonWhitelisted 400, player 403 on
+manager routes, OTP verify → promote → RE-LOGIN (old token keeps
+role=player — promotion does not refresh JWT), field create ({message,
+field} camelCase; DTO has NO surcharge fields — defaults 0), product
+create ({message, product}), booking 403 unverified, exact price 210
+(100x2 + product 4x2 + fee 2), overlap 409 player-safe conflicts,
+schedule block route = POST /manager/schedule/block (409 with
+bookingId/customerName — field bookings serializer keys are
+booking_id/users.phone_number, NOT id), booking privacy 403, manager
+field bookings, cancel + re-cancel 409, review gate 403, empty public
+reviews, manager stats 403 player / exact totals manager.
+npm test 95/95 ✅ test:e2e 20/20 ✅ build ✅ lint ✅.
