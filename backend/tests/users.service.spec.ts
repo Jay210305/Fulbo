@@ -61,6 +61,7 @@ describe('UsersService', () => {
         last_name: 'Torres',
         email: 'diego@example.com',
         phone_number: '+51987654321',
+        phone_verified: true,
         role: 'player',
       });
     });

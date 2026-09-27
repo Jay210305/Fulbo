@@ -219,3 +219,27 @@ booking_id/users.phone_number, NOT id), booking privacy 403, manager
 field bookings, cancel + re-cancel 409, review gate 403, empty public
 reviews, manager stats 403 player / exact totals manager.
 npm test 95/95 ✅ test:e2e 20/20 ✅ build ✅ lint ✅.
+
+Part K (integration — auth slice): COMPLETE.
+- Backend: serializeUser now includes phone_verified (the frontend needs the
+  real flag to prompt verification before booking; cannot infer from
+  phone_number because PUT /users/phone sets the phone with
+  phoneVerified=false). Updated users.service.spec exact-shape test; e2e
+  uses toMatchObject so unaffected; contract table updated.
+- Frontend: src/services/auth.api.ts (AuthApi: login/register/social/
+  sendOtp/verifyOtp/getProfile/updatePhone/promoteToManager). UserContext
+  rewritten as the session source of truth (token in localStorage under
+  'token' — the same key api.ts reads; on mount restores via getProfile,
+  401 clears token; login/register/logout/refreshProfile; keeps the
+  existing useUser helper surface: user/updateUser/hasPhone/
+  isPhoneVerified/requiresPhoneVerification). App.tsx split into
+  UserProvider (wraps whole app) + AppContent whose auth gate is
+  isRestoring→splash, !isAuthenticated→login/register (authError shown),
+  else player/manager. LoginScreen + RegisterScreen now controlled forms
+  with async submit + loading + error; social buttons left as visual
+  placeholders (Google/Facebook OAuth needs client IDs + the
+  @react-oauth/google flow — deferred).
+- tests: auth.api.spec.ts (5 tests). frontend 10/10, build ✅.
+- Postgres container had stopped between sessions (docker compose up -d
+  postgres to restore); e2e needs it running.
+

@@ -43,9 +43,17 @@ served via `vite preview` (manifest/sw/registerSW/icons all 200).
 
 Open follow-ups (tracked under integration/Part K work):
 
-- The live `src/app/` screens are still mock-driven (`mockFields`, mock teams/friends).
-  Wiring them to the completed Phase 1 endpoints (auth, fields, availability, bookings,
-  manager stats) is the next unit of work, paired with frontend test tooling.
+- Authentication is wired: `src/services/auth.api.ts` + a session-backed
+  `UserContext` (token in localStorage, restore on mount, `App.tsx` gates the
+  app on the real session, controlled Login/Register with async submit +
+  error). Remaining auth items: Google/Facebook OAuth (client IDs +
+  `@react-oauth/google` flow), the phone-verification modal, and
+  promote-to-manager in the owner-registration flow.
+- The live `src/app` screens are still mock-driven (`mockFields`, mock
+  teams/friends). Remaining wiring: fields (home/search/detail), the booking
+  flow (checkout → create booking + 409 handling), and the manager screens
+  (stats, field/product/schedule management). Frontend test tooling is set up
+  (`npm test`, vitest + jsdom); add component tests as screens get wired.
 - Chat `SOCKET_URL` needs `VITE_SOCKET_URL` when chat lands (Phase 2).
 
 See [frontend architecture](../architecture/frontend.md) for the current shape and
